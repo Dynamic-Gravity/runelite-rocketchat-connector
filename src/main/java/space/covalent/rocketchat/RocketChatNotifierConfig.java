@@ -75,4 +75,62 @@ public interface RocketChatNotifierConfig extends Config
 	{
 		return 1;
 	}
+
+	@ConfigSection(
+		name = "Loot",
+		description = "Notifications when you receive loot",
+		position = 3
+	)
+	String lootSection = "loot";
+
+	@ConfigItem(
+		keyName = "notifyOnLoot",
+		name = "Notify on loot",
+		description = "Send a Rocket.Chat message when you receive loot",
+		section = lootSection
+	)
+	default boolean notifyOnLoot()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "minLootValue",
+		name = "Minimum loot value",
+		description = "Only notify if total loot value (GE) meets this threshold (gp)",
+		section = lootSection
+	)
+	default int minLootValue()
+	{
+		return 100000;
+	}
+
+	@ConfigSection(
+		name = "Clue Scrolls",
+		description = "Notifications when you complete a clue scroll",
+		position = 4
+	)
+	String clueSection = "clue";
+
+	@ConfigItem(
+		keyName = "notifyOnClue",
+		name = "Notify on clue completion",
+		description = "Send a Rocket.Chat message when you complete a clue scroll",
+		section = clueSection
+	)
+	default boolean notifyOnClue()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "minClueTier",
+		name = "Minimum clue tier",
+		description = "Only notify for clues at or above this tier",
+		section = clueSection
+	)
+	default ClueTier minClueTier()
+	{
+		return ClueTier.EASY;
+	}
 }
