@@ -8,6 +8,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import space.covalent.rocketchat.notifiers.BossNotifier;
+import space.covalent.rocketchat.notifiers.ChatPatternNotifier;
 import space.covalent.rocketchat.notifiers.ClueNotifier;
 import space.covalent.rocketchat.notifiers.CollectionLogNotifier;
 import space.covalent.rocketchat.notifiers.CombatAchievementNotifier;
@@ -66,6 +67,9 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Inject
 	private DiaryNotifier diaryNotifier;
 
+	@Inject
+	private ChatPatternNotifier chatPatternNotifier;
+
 	@Override
 	protected void startUp()
 	{
@@ -81,6 +85,7 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.register(collectionLogNotifier);
 		eventBus.register(combatAchievementNotifier);
 		eventBus.register(diaryNotifier);
+		eventBus.register(chatPatternNotifier);
 	}
 
 	@Override
@@ -98,6 +103,7 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.unregister(collectionLogNotifier);
 		eventBus.unregister(combatAchievementNotifier);
 		eventBus.unregister(diaryNotifier);
+		eventBus.unregister(chatPatternNotifier);
 	}
 
 	@Provides

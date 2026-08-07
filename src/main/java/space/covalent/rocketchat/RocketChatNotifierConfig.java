@@ -194,4 +194,18 @@ public interface RocketChatNotifierConfig extends Config
 
 	@ConfigItem(keyName = "minDiaryTier", name = "Minimum tier", description = "Only notify for this tier or above", section = diarySection)
 	default DiaryTier minDiaryTier() { return DiaryTier.EASY; }
+
+	// Custom Pattern
+	@ConfigSection(name = "Custom Pattern", description = "Notify on custom chat messages", position = 12)
+	String chatPatternSection = "chatpattern";
+
+	@ConfigItem(keyName = "notifyOnChatPattern", name = "Notify on pattern match",
+		description = "Send a message when a chat message matches the custom pattern",
+		section = chatPatternSection)
+	default boolean notifyOnChatPattern() { return false; }
+
+	@ConfigItem(keyName = "chatPattern", name = "Pattern (regex)",
+		description = "Java regex to match against chat messages",
+		section = chatPatternSection)
+	default String chatPattern() { return ""; }
 }
