@@ -8,6 +8,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import space.covalent.rocketchat.notifiers.DeathNotifier;
+import space.covalent.rocketchat.notifiers.LevelNotifier;
 
 @Slf4j
 @PluginDescriptor(
@@ -26,11 +27,15 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Inject
 	private DeathNotifier deathNotifier;
 
+	@Inject
+	private LevelNotifier levelNotifier;
+
 	@Override
 	protected void startUp()
 	{
 		log.debug("Rocket.Chat Notifier started");
 		eventBus.register(deathNotifier);
+		eventBus.register(levelNotifier);
 	}
 
 	@Override
@@ -38,6 +43,7 @@ public class RocketChatNotifierPlugin extends Plugin
 	{
 		log.debug("Rocket.Chat Notifier stopped");
 		eventBus.unregister(deathNotifier);
+		eventBus.unregister(levelNotifier);
 	}
 
 	@Provides
