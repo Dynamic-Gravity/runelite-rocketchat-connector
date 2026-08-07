@@ -7,10 +7,17 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import space.covalent.rocketchat.notifiers.BossNotifier;
 import space.covalent.rocketchat.notifiers.ClueNotifier;
+import space.covalent.rocketchat.notifiers.CollectionLogNotifier;
+import space.covalent.rocketchat.notifiers.CombatAchievementNotifier;
 import space.covalent.rocketchat.notifiers.DeathNotifier;
+import space.covalent.rocketchat.notifiers.DiaryNotifier;
 import space.covalent.rocketchat.notifiers.LevelNotifier;
 import space.covalent.rocketchat.notifiers.LootNotifier;
+import space.covalent.rocketchat.notifiers.PetNotifier;
+import space.covalent.rocketchat.notifiers.QuestNotifier;
+import space.covalent.rocketchat.notifiers.SlayerNotifier;
 
 @Slf4j
 @PluginDescriptor(
@@ -38,6 +45,27 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Inject
 	private ClueNotifier clueNotifier;
 
+	@Inject
+	private PetNotifier petNotifier;
+
+	@Inject
+	private QuestNotifier questNotifier;
+
+	@Inject
+	private SlayerNotifier slayerNotifier;
+
+	@Inject
+	private BossNotifier bossNotifier;
+
+	@Inject
+	private CollectionLogNotifier collectionLogNotifier;
+
+	@Inject
+	private CombatAchievementNotifier combatAchievementNotifier;
+
+	@Inject
+	private DiaryNotifier diaryNotifier;
+
 	@Override
 	protected void startUp()
 	{
@@ -46,6 +74,13 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.register(levelNotifier);
 		eventBus.register(lootNotifier);
 		eventBus.register(clueNotifier);
+		eventBus.register(petNotifier);
+		eventBus.register(questNotifier);
+		eventBus.register(slayerNotifier);
+		eventBus.register(bossNotifier);
+		eventBus.register(collectionLogNotifier);
+		eventBus.register(combatAchievementNotifier);
+		eventBus.register(diaryNotifier);
 	}
 
 	@Override
@@ -56,6 +91,13 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.unregister(levelNotifier);
 		eventBus.unregister(lootNotifier);
 		eventBus.unregister(clueNotifier);
+		eventBus.unregister(petNotifier);
+		eventBus.unregister(questNotifier);
+		eventBus.unregister(slayerNotifier);
+		eventBus.unregister(bossNotifier);
+		eventBus.unregister(collectionLogNotifier);
+		eventBus.unregister(combatAchievementNotifier);
+		eventBus.unregister(diaryNotifier);
 	}
 
 	@Provides

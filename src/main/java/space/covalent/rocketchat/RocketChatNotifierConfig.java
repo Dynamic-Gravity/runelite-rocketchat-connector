@@ -133,4 +133,65 @@ public interface RocketChatNotifierConfig extends Config
 	{
 		return ClueTier.EASY;
 	}
+
+	// Pet
+	@ConfigSection(name = "Pets", description = "Pet drop notifications", position = 5)
+	String petSection = "pet";
+
+	@ConfigItem(keyName = "notifyOnPet", name = "Notify on pet", description = "Send a message when you receive a pet", section = petSection)
+	default boolean notifyOnPet() { return false; }
+
+	// Quest
+	@ConfigSection(name = "Quests", description = "Quest completion notifications", position = 6)
+	String questSection = "quest";
+
+	@ConfigItem(keyName = "notifyOnQuest", name = "Notify on quest", description = "Send a message when you complete a quest", section = questSection)
+	default boolean notifyOnQuest() { return false; }
+
+	// Slayer
+	@ConfigSection(name = "Slayer", description = "Slayer task completion notifications", position = 7)
+	String slayerSection = "slayer";
+
+	@ConfigItem(keyName = "notifyOnSlayer", name = "Notify on slayer task", description = "Send a message when you complete a slayer task", section = slayerSection)
+	default boolean notifyOnSlayer() { return false; }
+
+	// Boss
+	@ConfigSection(name = "Boss Kills", description = "Boss kill count notifications", position = 8)
+	String bossSection = "boss";
+
+	@ConfigItem(keyName = "notifyOnBoss", name = "Notify on boss kill", description = "Send a message on boss kill count milestones", section = bossSection)
+	default boolean notifyOnBoss() { return false; }
+
+	@ConfigItem(keyName = "bossPersonalBestOnly", name = "Personal best only", description = "Only notify when a personal best time is set", section = bossSection)
+	default boolean bossPersonalBestOnly() { return false; }
+
+	@ConfigItem(keyName = "bossKillCountInterval", name = "Kill count interval", description = "Notify every N kills (0 = only on personal best)", section = bossSection)
+	default int bossKillCountInterval() { return 1; }
+
+	// Collection log
+	@ConfigSection(name = "Collection Log", description = "Collection log new-entry notifications", position = 9)
+	String collectionLogSection = "collectionlog";
+
+	@ConfigItem(keyName = "notifyOnCollectionLog", name = "Notify on collection log", description = "Send a message when a new item is added to your collection log", section = collectionLogSection)
+	default boolean notifyOnCollectionLog() { return false; }
+
+	// Combat achievements
+	@ConfigSection(name = "Combat Achievements", description = "Combat achievement notifications", position = 10)
+	String combatAchievementSection = "combatachievement";
+
+	@ConfigItem(keyName = "notifyOnCombatAchievement", name = "Notify on CA", description = "Send a message when you complete a combat achievement", section = combatAchievementSection)
+	default boolean notifyOnCombatAchievement() { return false; }
+
+	@ConfigItem(keyName = "minCombatAchievementTier", name = "Minimum tier", description = "Only notify for this tier or above", section = combatAchievementSection)
+	default CombatAchievementTier minCombatAchievementTier() { return CombatAchievementTier.EASY; }
+
+	// Achievement diaries
+	@ConfigSection(name = "Achievement Diaries", description = "Diary completion notifications", position = 11)
+	String diarySection = "diary";
+
+	@ConfigItem(keyName = "notifyOnDiary", name = "Notify on diary", description = "Send a message when you complete an achievement diary", section = diarySection)
+	default boolean notifyOnDiary() { return false; }
+
+	@ConfigItem(keyName = "minDiaryTier", name = "Minimum tier", description = "Only notify for this tier or above", section = diarySection)
+	default DiaryTier minDiaryTier() { return DiaryTier.EASY; }
 }
