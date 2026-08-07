@@ -208,4 +208,18 @@ public interface RocketChatNotifierConfig extends Config
 		description = "Java regex to match against chat messages",
 		section = chatPatternSection)
 	default String chatPattern() { return ""; }
+
+	// Grand Exchange
+	@ConfigSection(name = "Grand Exchange", description = "Grand Exchange trade notifications", position = 13)
+	String grandExchangeSection = "grandexchange";
+
+	@ConfigItem(keyName = "notifyOnGrandExchange", name = "Notify on GE trade",
+		description = "Send a message when a Grand Exchange offer completes",
+		section = grandExchangeSection)
+	default boolean notifyOnGrandExchange() { return false; }
+
+	@ConfigItem(keyName = "minGrandExchangeValue", name = "Minimum trade value",
+		description = "Only notify if the completed trade value meets this threshold (gp)",
+		section = grandExchangeSection)
+	default int minGrandExchangeValue() { return 0; }
 }
