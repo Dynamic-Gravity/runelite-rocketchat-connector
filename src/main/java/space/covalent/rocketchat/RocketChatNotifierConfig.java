@@ -26,4 +26,22 @@ public interface RocketChatNotifierConfig extends Config
 	{
 		return "";
 	}
+
+	@ConfigSection(
+		name = "Death",
+		description = "Notifications when you die",
+		position = 1
+	)
+	String deathSection = "death";
+
+	@ConfigItem(
+		keyName = "notifyOnDeath",
+		name = "Notify on death",
+		description = "Send a Rocket.Chat message when you die",
+		section = deathSection
+	)
+	default boolean notifyOnDeath()
+	{
+		return false;
+	}
 }
