@@ -37,7 +37,7 @@ public class CollectionLogNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":book: Collection log update")
+					.title("📖 Collection log update")
 					.text("New entry: **" + itemName + "**")
 					.color("#2980B9")
 					.build()

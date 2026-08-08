@@ -47,7 +47,7 @@ public class DeathNotifier
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":skull: " + name + " has died")
+					.title("💀 " + name + " has died")
 					.text("**Player:** " + name + "\n**Combat level:** " + combatLevel + "\n**Location:** " + locationStr)
 					.color("#FF0000")
 					.build()

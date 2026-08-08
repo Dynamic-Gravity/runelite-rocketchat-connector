@@ -45,7 +45,7 @@ public class DiaryNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":clipboard: " + area + " " + tierName + " Diary complete!")
+					.title("📋 " + area + " " + tierName + " Diary complete!")
 					.color("#27AE60")
 					.build()
 			))

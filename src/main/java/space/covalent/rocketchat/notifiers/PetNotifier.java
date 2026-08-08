@@ -29,7 +29,7 @@ public class PetNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":dog: You received a pet!")
+					.title("🐕 You received a pet!")
 					.text(msg)
 					.color("#9B59B6")
 					.build()

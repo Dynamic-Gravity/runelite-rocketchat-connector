@@ -59,7 +59,7 @@ public class GrandExchangeNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":shopping_cart: " + action + " " + itemName)
+					.title("🛒 " + action + " " + itemName)
 					.text(body)
 					.color(color)
 					.build()

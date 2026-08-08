@@ -53,7 +53,7 @@ public class LevelNotifier
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":chart_with_upwards_trend: Level " + newLevel + " " + skillName + "!")
+					.title("📈 Level " + newLevel + " " + skillName + "!")
 					.text("You have reached level **" + newLevel + "** " + skillName + ".")
 					.color("#00FF00")
 					.thumbUrl(iconUrl)

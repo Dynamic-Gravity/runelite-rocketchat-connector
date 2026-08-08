@@ -48,7 +48,7 @@ public class BossNotifier
 			webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 				.attachments(Collections.singletonList(
 					RocketChatPayload.Attachment.builder()
-						.title(":skull_crossbones: " + boss + " kill count: " + count)
+						.title("☠️ " + boss + " kill count: " + count)
 						.color("#C0392B")
 						.build()
 				))
@@ -66,8 +66,8 @@ public class BossNotifier
 			if (config.bossPersonalBestOnly() && !isNewPb) return;
 
 			String title = isNewPb
-				? ":star: New personal best: " + duration
-				: ":timer_clock: Fight duration: " + duration;
+				? "⭐ New personal best: " + duration
+				: "⏱️ Fight duration: " + duration;
 
 			webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 				.attachments(Collections.singletonList(

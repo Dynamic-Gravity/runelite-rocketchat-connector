@@ -70,7 +70,7 @@ public class ClueNotifier
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":scroll: " + tierName + " Clue Scroll completed")
+					.title("📜 " + tierName + " Clue Scroll completed")
 					.text(body)
 					.color("#8B4513")
 					.build()

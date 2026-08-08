@@ -45,7 +45,7 @@ public class CombatAchievementNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":medal: Combat Achievement: " + taskName)
+					.title("🏅 Combat Achievement: " + taskName)
 					.text("Tier: **" + tierName + "**")
 					.color("#E67E22")
 					.build()

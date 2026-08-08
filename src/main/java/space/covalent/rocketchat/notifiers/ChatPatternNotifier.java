@@ -55,7 +55,7 @@ public class ChatPatternNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":bell: Pattern match")
+					.title("🔔 Pattern match")
 					.text(msg)
 					.color("#3498DB")
 					.build()

@@ -37,7 +37,7 @@ public class QuestNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":trophy: Quest complete!")
+					.title("🏆 Quest complete!")
 					.text("You have completed **" + questName + "**.")
 					.color("#1E8449")
 					.build()

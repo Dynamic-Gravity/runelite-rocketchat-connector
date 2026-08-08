@@ -38,7 +38,7 @@ public class SlayerNotifier
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":crossed_swords: Slayer task complete!")
+					.title("⚔️ Slayer task complete!")
 					.text("Killed **" + count + "** " + monster + ".")
 					.color("#E74C3C")
 					.build()

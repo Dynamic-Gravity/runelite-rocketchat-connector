@@ -64,7 +64,7 @@ public class LootNotifier
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title(":moneybag: Loot from " + event.getName())
+					.title("💰 Loot from " + event.getName())
 					.text(body)
 					.color("#FFD700")
 					.build()
