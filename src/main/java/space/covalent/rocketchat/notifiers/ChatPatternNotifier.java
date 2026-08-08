@@ -20,6 +20,9 @@ public class ChatPatternNotifier
 	@Inject RocketChatNotifierConfig config;
 	@Inject WebhookClient webhookClient;
 
+	private String lastRawPattern = null;
+	private Pattern cachedPattern = null;
+
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
 	{
@@ -28,20 +31,26 @@ public class ChatPatternNotifier
 		String rawPattern = config.chatPattern();
 		if (rawPattern == null || rawPattern.isEmpty()) return;
 
+		if (!rawPattern.equals(lastRawPattern))
+		{
+			try
+			{
+				cachedPattern = Pattern.compile(rawPattern, Pattern.CASE_INSENSITIVE);
+				lastRawPattern = rawPattern;
+			}
+			catch (PatternSyntaxException e)
+			{
+				log.debug("Invalid chat pattern regex: {}", rawPattern);
+				cachedPattern = null;
+				lastRawPattern = rawPattern;
+				return;
+			}
+		}
+
+		if (cachedPattern == null) return;
+
 		String msg = Text.removeTags(event.getMessage());
-
-		Pattern pattern;
-		try
-		{
-			pattern = Pattern.compile(rawPattern, Pattern.CASE_INSENSITIVE);
-		}
-		catch (PatternSyntaxException e)
-		{
-			log.debug("Invalid chat pattern regex: {}", rawPattern);
-			return;
-		}
-
-		if (!pattern.matcher(msg).find()) return;
+		if (!cachedPattern.matcher(msg).find()) return;
 
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(

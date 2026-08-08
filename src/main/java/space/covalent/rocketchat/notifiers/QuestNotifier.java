@@ -17,7 +17,7 @@ import space.covalent.rocketchat.WebhookClient;
 public class QuestNotifier
 {
 	private static final Pattern QUEST_COMPLETE = Pattern.compile(
-		"Congratulations, you've completed (.+)!");
+		"Congratulations, you've completed (?!.*combat achievement)(.+)!");
 
 	@Inject RocketChatNotifierConfig config;
 	@Inject WebhookClient webhookClient;

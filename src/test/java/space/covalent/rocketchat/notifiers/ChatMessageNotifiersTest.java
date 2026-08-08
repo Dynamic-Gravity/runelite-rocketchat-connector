@@ -84,6 +84,15 @@ public class ChatMessageNotifiersTest
 		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Dragon Slayer II"));
 	}
 
+	@Test
+	public void testQuestNotifierIgnoresCombatAchievementMessages()
+	{
+		when(config.notifyOnQuest()).thenReturn(true);
+		questNotifier.onChatMessage(gameMessage(
+			"Congratulations, you've completed a Hard combat achievement: Whiplash."));
+		verify(webhookClient, never()).send(any(), any());
+	}
+
 	// ── Slayer ───────────────────────────────────────────────────────────────
 
 	@Test
