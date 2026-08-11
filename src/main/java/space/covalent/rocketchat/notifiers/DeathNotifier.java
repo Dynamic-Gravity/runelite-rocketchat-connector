@@ -8,6 +8,7 @@ import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.client.eventbus.Subscribe;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -44,12 +45,17 @@ public class DeathNotifier
 			? location.getX() + ", " + location.getY() + " (plane " + location.getPlane() + ")"
 			: "Unknown";
 
+		IronManMode ironManMode = config.ironManMode();
+		boolean hardcore = ironManMode != null && ironManMode.isHardcore();
+		String title = hardcore ? "☠️ HARDCORE DEATH: " + name : "💀 " + name + " has died";
+		String color = hardcore ? "#7B0000" : "#FF0000";
+
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
-					.title("💀 " + name + " has died")
+					.title(title)
 					.text("**Player:** " + name + "\n**Combat level:** " + combatLevel + "\n**Location:** " + locationStr)
-					.color("#FF0000")
+					.color(color)
 					.build()
 			))
 			.build();

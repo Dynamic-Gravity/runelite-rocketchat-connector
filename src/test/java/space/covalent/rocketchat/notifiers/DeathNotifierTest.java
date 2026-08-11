@@ -10,10 +10,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -76,5 +79,47 @@ public class DeathNotifierTest
 		notifier.onActorDeath(event);
 
 		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testHardcoreDeathHasAlarmingTitleAndColor()
+	{
+		when(config.notifyOnDeath()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.HARDCORE_IRONMAN);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player localPlayer = mock(Player.class);
+		when(client.getLocalPlayer()).thenReturn(localPlayer);
+		when(localPlayer.getName()).thenReturn("Zezima");
+		when(localPlayer.getCombatLevel()).thenReturn(126);
+
+		ActorDeath event = new ActorDeath(localPlayer);
+		notifier.onActorDeath(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment att = captor.getValue().getAttachments().get(0);
+		assertTrue(att.getTitle().contains("HARDCORE DEATH"));
+		assertEquals("#7B0000", att.getColor());
+	}
+
+	@Test
+	public void testNonHardcoreDeathHasNormalTitleAndColor()
+	{
+		when(config.notifyOnDeath()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player localPlayer = mock(Player.class);
+		when(client.getLocalPlayer()).thenReturn(localPlayer);
+		when(localPlayer.getName()).thenReturn("Zezima");
+		when(localPlayer.getCombatLevel()).thenReturn(126);
+
+		ActorDeath event = new ActorDeath(localPlayer);
+		notifier.onActorDeath(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment att = captor.getValue().getAttachments().get(0);
+		assertFalse(att.getTitle().contains("HARDCORE"));
+		assertEquals("#FF0000", att.getColor());
 	}
 }
