@@ -4,7 +4,7 @@ stages:
 
 test:
   stage: test
-  image: eclipse-temurin:11-jdk
+  image: eclipse-temurin:17-jdk
   variables:
     GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
   cache:
