@@ -222,4 +222,13 @@ public interface RocketChatNotifierConfig extends Config
 		description = "Only notify if the completed trade value meets this threshold (gp)",
 		section = grandExchangeSection)
 	default int minGrandExchangeValue() { return 0; }
+
+	// Iron Man
+	@ConfigSection(name = "Iron Man", description = "Iron Man account type settings", position = 14)
+	String ironManSection = "ironman";
+
+	@ConfigItem(keyName = "ironManMode", name = "Account type",
+		description = "Enables iron man behaviours appropriate for your account type",
+		section = ironManSection)
+	default IronManMode ironManMode() { return IronManMode.NONE; }
 }
