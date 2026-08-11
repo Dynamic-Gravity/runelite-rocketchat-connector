@@ -28,4 +28,4 @@ mirror:
     - if: '$CI_COMMIT_BRANCH == "master"'
   script:
     - git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
-    - git push "https://oauth2:${GITLAB_COM_MIRROR_TOKEN}@gitlab.com/Dynamic-Gravity/runelite-rocketchat-connector.git" --mirror
+    - git push "https://oauth2:${GITLAB_COM_MIRROR_TOKEN}@gitlab.com/Dynamic-Gravity/runelite-rocketchat-connector.git" --prune 'refs/heads/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
