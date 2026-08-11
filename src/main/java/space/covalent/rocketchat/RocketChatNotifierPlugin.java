@@ -15,6 +15,7 @@ import space.covalent.rocketchat.notifiers.CombatAchievementNotifier;
 import space.covalent.rocketchat.notifiers.DeathNotifier;
 import space.covalent.rocketchat.notifiers.DiaryNotifier;
 import space.covalent.rocketchat.notifiers.GrandExchangeNotifier;
+import space.covalent.rocketchat.notifiers.HardcoreStatusNotifier;
 import space.covalent.rocketchat.notifiers.LevelNotifier;
 import space.covalent.rocketchat.notifiers.LootNotifier;
 import space.covalent.rocketchat.notifiers.PetNotifier;
@@ -74,6 +75,9 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Inject
 	private GrandExchangeNotifier grandExchangeNotifier;
 
+	@Inject
+	private HardcoreStatusNotifier hardcoreStatusNotifier;
+
 	@Override
 	protected void startUp()
 	{
@@ -91,6 +95,7 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.register(diaryNotifier);
 		eventBus.register(chatPatternNotifier);
 		eventBus.register(grandExchangeNotifier);
+		eventBus.register(hardcoreStatusNotifier);
 	}
 
 	@Override
@@ -110,6 +115,7 @@ public class RocketChatNotifierPlugin extends Plugin
 		eventBus.unregister(diaryNotifier);
 		eventBus.unregister(chatPatternNotifier);
 		eventBus.unregister(grandExchangeNotifier);
+		eventBus.unregister(hardcoreStatusNotifier);
 	}
 
 	@Provides

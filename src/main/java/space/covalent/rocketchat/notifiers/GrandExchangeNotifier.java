@@ -9,6 +9,7 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -29,6 +30,12 @@ public class GrandExchangeNotifier
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event)
 	{
 		if (!config.notifyOnGrandExchange())
+		{
+			return;
+		}
+
+		IronManMode ironManMode = config.ironManMode();
+		if (ironManMode != null && ironManMode.isIronman())
 		{
 			return;
 		}
