@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -84,6 +85,48 @@ public class LootNotifierTest
 
 		LootReceived event = new LootReceived("Some Boss", 0, LootRecordType.NPC,
 			Collections.emptyList(), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testUsesHighAlchValueInIronmanMode()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(0);
+		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(comp.getHaPrice()).thenReturn(120000);
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient).send(any(), any());
+		verify(itemManager, never()).getItemPrice(itemId);
+	}
+
+	@Test
+	public void testHighAlchValueAppliedToMinThreshold()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(200000);
+		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(comp.getHaPrice()).thenReturn(120000);
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
 		notifier.onLootReceived(event);
 
 		verify(webhookClient, never()).send(any(), any());
