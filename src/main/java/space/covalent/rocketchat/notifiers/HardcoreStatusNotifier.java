@@ -18,36 +18,50 @@ import space.covalent.rocketchat.WebhookClient;
 @Singleton
 public class HardcoreStatusNotifier
 {
-    private static final Pattern HC_LOST = Pattern.compile(
-        "You have lost your Hardcore (?:Group )?Ironman status\\.");
+	private static final Pattern HC_LOST = Pattern.compile(
+		"You have lost your Hardcore (?:Group )?Ironman status\\.");
 
-    @Inject Client client;
-    @Inject RocketChatNotifierConfig config;
-    @Inject WebhookClient webhookClient;
+	@Inject
+	Client client;
 
-    @Subscribe
-    public void onChatMessage(ChatMessage event)
-    {
-        IronManMode ironManMode = config.ironManMode();
-        if (ironManMode == null || !ironManMode.isHardcore()) return;
-        if (event.getType() != ChatMessageType.GAMEMESSAGE) return;
+	@Inject
+	RocketChatNotifierConfig config;
 
-        String msg = Text.removeTags(event.getMessage());
-        Matcher m = HC_LOST.matcher(msg);
-        if (!m.find()) return;
+	@Inject
+	WebhookClient webhookClient;
 
-        String name = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
-            ? client.getLocalPlayer().getName()
-            : "Unknown";
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		IronManMode ironManMode = config.ironManMode();
+		if (ironManMode == null || !ironManMode.isHardcore())
+		{
+			return;
+		}
+		if (event.getType() != ChatMessageType.GAMEMESSAGE)
+		{
+			return;
+		}
 
-        webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
-            .attachments(Collections.singletonList(
-                RocketChatPayload.Attachment.builder()
-                    .title("☠️ Hardcore status lost: " + name)
-                    .text(msg)
-                    .color("#000000")
-                    .build()
-            ))
-            .build());
-    }
+		String msg = Text.removeTags(event.getMessage());
+		Matcher m = HC_LOST.matcher(msg);
+		if (!m.find())
+		{
+			return;
+		}
+
+		String name = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
+			? client.getLocalPlayer().getName()
+			: "Unknown";
+
+		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
+			.attachments(Collections.singletonList(
+				RocketChatPayload.Attachment.builder()
+					.title("☠️ Hardcore status lost: " + name)
+					.text(msg)
+					.color("#000000")
+					.build()
+			))
+			.build());
+	}
 }
