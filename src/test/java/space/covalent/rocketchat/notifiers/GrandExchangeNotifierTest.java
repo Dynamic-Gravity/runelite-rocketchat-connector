@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -31,6 +32,7 @@ public class GrandExchangeNotifierTest
 	public void testSendsOnBought()
 	{
 		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.NONE);
 		when(config.minGrandExchangeValue()).thenReturn(0);
 		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
 
@@ -59,6 +61,7 @@ public class GrandExchangeNotifierTest
 	public void testSkipsActiveOffer()
 	{
 		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.NONE);
 
 		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
 		when(offer.getState()).thenReturn(GrandExchangeOfferState.BUYING);
@@ -74,6 +77,7 @@ public class GrandExchangeNotifierTest
 	public void testSkipsBelowMinValue()
 	{
 		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.NONE);
 		when(config.minGrandExchangeValue()).thenReturn(1000000);
 
 		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
@@ -92,6 +96,7 @@ public class GrandExchangeNotifierTest
 	public void testSendsOnSold()
 	{
 		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.NONE);
 		when(config.minGrandExchangeValue()).thenReturn(0);
 		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
 
@@ -114,5 +119,58 @@ public class GrandExchangeNotifierTest
 		String title = captor.getValue().getAttachments().get(0).getTitle();
 		assertTrue(title.contains("Sold"));
 		assertTrue(title.contains("Coal"));
+	}
+
+	@Test
+	public void testSuppressedWhenIronman()
+	{
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+
+		GrandExchangeOfferChanged event = new GrandExchangeOfferChanged();
+		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
+		event.setOffer(offer);
+		notifier.onGrandExchangeOfferChanged(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testSuppressedWhenHardcoreIronman()
+	{
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.HARDCORE_IRONMAN);
+
+		GrandExchangeOfferChanged event = new GrandExchangeOfferChanged();
+		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
+		event.setOffer(offer);
+		notifier.onGrandExchangeOfferChanged(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testNotSuppressedWhenNone()
+	{
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.NONE);
+		when(config.minGrandExchangeValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Coal");
+		when(itemManager.getItemComposition(453)).thenReturn(comp);
+
+		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
+		when(offer.getState()).thenReturn(GrandExchangeOfferState.BOUGHT);
+		when(offer.getItemId()).thenReturn(453);
+		when(offer.getTotalQuantity()).thenReturn(100);
+		when(offer.getPrice()).thenReturn(200);
+
+		GrandExchangeOfferChanged event = new GrandExchangeOfferChanged();
+		event.setOffer(offer);
+		notifier.onGrandExchangeOfferChanged(event);
+
+		verify(webhookClient).send(any(), any());
 	}
 }
