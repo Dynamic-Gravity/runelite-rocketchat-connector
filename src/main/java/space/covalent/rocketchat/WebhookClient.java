@@ -44,7 +44,7 @@ public class WebhookClient
 		}
 		catch (IllegalArgumentException e)
 		{
-			log.debug("Invalid Rocket.Chat webhook URL: {}", webhookUrl);
+			log.debug("Invalid Rocket.Chat webhook URL (check plugin config)");
 			return;
 		}
 
