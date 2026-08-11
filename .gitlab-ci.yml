@@ -16,7 +16,7 @@ test:
     - chmod +x gradlew
     - ./gradlew --no-daemon build test
 
-mirror:
+mirror-gitlab:
   stage: mirror
   image:
     name: alpine/git:latest
@@ -29,3 +29,17 @@ mirror:
   script:
     - git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
     - git push "https://oauth2:${GITLAB_COM_MIRROR_TOKEN}@gitlab.com/Dynamic-Gravity/runelite-rocketchat-connector.git" --prune 'refs/heads/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
+
+mirror-github:
+  stage: mirror
+  image:
+    name: alpine/git:latest
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_SERVER_HOST == "git.covalent.space"'
+  script:
+    - git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'
+    - git push "https://${GITHUB_MIRROR_TOKEN}@github.com/Dynamic-Gravity/runelite-rocketchat-connector.git" --prune 'refs/heads/*:refs/heads/*' 'refs/tags/*:refs/tags/*'
