@@ -34,10 +34,19 @@ public class WebhookClient
 
 		String json = gson.toJson(payload);
 		RequestBody body = RequestBody.create(JSON, json);
-		Request request = new Request.Builder()
-			.url(webhookUrl)
-			.post(body)
-			.build();
+		Request request;
+		try
+		{
+			request = new Request.Builder()
+				.url(webhookUrl)
+				.post(body)
+				.build();
+		}
+		catch (IllegalArgumentException e)
+		{
+			log.debug("Invalid Rocket.Chat webhook URL: {}", webhookUrl);
+			return;
+		}
 
 		okHttpClient.newCall(request).enqueue(new Callback()
 		{

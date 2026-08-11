@@ -43,6 +43,11 @@ public class LootNotifier
 		}
 
 		Collection<ItemStack> items = event.getItems();
+		if (items.isEmpty())
+		{
+			return;
+		}
+
 		long totalValue = 0;
 		List<String> itemLines = new ArrayList<>();
 

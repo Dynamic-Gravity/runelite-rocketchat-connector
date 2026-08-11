@@ -87,4 +87,32 @@ public class GrandExchangeNotifierTest
 
 		verify(webhookClient, never()).send(any(), any());
 	}
+
+	@Test
+	public void testSendsOnSold()
+	{
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.minGrandExchangeValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Coal");
+		when(itemManager.getItemComposition(453)).thenReturn(comp);
+
+		GrandExchangeOffer offer = mock(GrandExchangeOffer.class);
+		when(offer.getState()).thenReturn(GrandExchangeOfferState.SOLD);
+		when(offer.getItemId()).thenReturn(453);
+		when(offer.getTotalQuantity()).thenReturn(1000);
+		when(offer.getPrice()).thenReturn(200);
+
+		GrandExchangeOfferChanged event = new GrandExchangeOfferChanged();
+		event.setOffer(offer);
+		notifier.onGrandExchangeOfferChanged(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		String title = captor.getValue().getAttachments().get(0).getTitle();
+		assertTrue(title.contains("Sold"));
+		assertTrue(title.contains("Coal"));
+	}
 }

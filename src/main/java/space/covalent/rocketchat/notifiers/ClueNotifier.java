@@ -48,6 +48,11 @@ public class ClueNotifier
 		}
 
 		Collection<ItemStack> items = event.getItems();
+		if (items.isEmpty())
+		{
+			return;
+		}
+
 		List<String> itemLines = new ArrayList<>();
 		long totalValue = 0;
 

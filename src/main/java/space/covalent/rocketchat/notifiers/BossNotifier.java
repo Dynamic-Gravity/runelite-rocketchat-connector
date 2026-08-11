@@ -43,6 +43,7 @@ public class BossNotifier
 			catch (NumberFormatException e) { return; }
 
 			int interval = config.bossKillCountInterval();
+			if (interval == 0) return;
 			if (interval > 1 && countVal % interval != 0) return;
 
 			webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()

@@ -66,4 +66,12 @@ public class WebhookClientTest
 
 		assertEquals(0, server.getRequestCount());
 	}
+
+	@Test
+	public void testSkipsWhenUrlMalformed()
+	{
+		RocketChatPayload payload = RocketChatPayload.builder().text("test").build();
+		client.send("not a valid url !!!", payload);
+		assertEquals(0, server.getRequestCount());
+	}
 }

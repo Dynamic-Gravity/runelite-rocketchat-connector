@@ -68,4 +68,19 @@ public class ChatPatternNotifierTest
 		notifier.onChatMessage(msg("Anything."));
 		verify(webhookClient, never()).send(any(), any());
 	}
+
+	@Test
+	public void testCacheUpdatesWhenPatternChanges()
+	{
+		when(config.notifyOnChatPattern()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		when(config.chatPattern()).thenReturn("diamond");
+		notifier.onChatMessage(msg("You found a diamond."));
+		verify(webhookClient, times(1)).send(any(), any());
+
+		when(config.chatPattern()).thenReturn("sapphire");
+		notifier.onChatMessage(msg("You found a diamond."));
+		verify(webhookClient, times(1)).send(any(), any());
+	}
 }

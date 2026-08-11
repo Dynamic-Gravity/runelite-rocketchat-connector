@@ -186,4 +186,99 @@ public class ChatMessageNotifiersTest
 			"Congratulations! You have completed all of the Varrock Hard Diary tasks."));
 		verify(webhookClient).send(any(), any());
 	}
+
+	@Test
+	public void testDiaryNotifierSkipsBelowMinTier()
+	{
+		when(config.notifyOnDiary()).thenReturn(true);
+		when(config.minDiaryTier()).thenReturn(DiaryTier.HARD);
+		diaryNotifier.onChatMessage(gameMessage(
+			"Congratulations! You have completed all of the Lumbridge Easy Diary tasks."));
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	// ── Boss edge cases ───────────────────────────────────────────────────────
+
+	@Test
+	public void testBossNotifierIntervalZeroSuppressesKc()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.bossKillCountInterval()).thenReturn(0);
+		bossNotifier.onChatMessage(gameMessage("Your Zulrah kill count is: 100."));
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierIntervalFilteringSkipsNonMultiple()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.bossKillCountInterval()).thenReturn(10);
+		bossNotifier.onChatMessage(gameMessage("Your Zulrah kill count is: 5."));
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierIntervalFilteringFiresOnMultiple()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.bossKillCountInterval()).thenReturn(10);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		bossNotifier.onChatMessage(gameMessage("Your Zulrah kill count is: 10."));
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierCommaFormattedKillCount()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.bossKillCountInterval()).thenReturn(1);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		bossNotifier.onChatMessage(gameMessage("Your Zulrah kill count is: 1,000."));
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierFightDurationNoPbFires()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		bossNotifier.onChatMessage(gameMessage("Fight duration: 2:00."));
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierFightDurationWithDifferentPbFires()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		bossNotifier.onChatMessage(gameMessage("Fight duration: 2:00. Personal best: 1:34."));
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testBossNotifierSkipsNonPbFightDurationWhenPbOnly()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(true);
+		bossNotifier.onChatMessage(gameMessage("Fight duration: 2:00. Personal best: 1:34."));
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	// ── Slayer edge cases ─────────────────────────────────────────────────────
+
+	@Test
+	public void testSlayerNotifierCommaFormattedCount()
+	{
+		when(config.notifyOnSlayer()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		slayerNotifier.onChatMessage(gameMessage(
+			"You have completed your task! You killed 1,000 Abyssal demons."));
+		verify(webhookClient).send(any(), any());
+	}
 }

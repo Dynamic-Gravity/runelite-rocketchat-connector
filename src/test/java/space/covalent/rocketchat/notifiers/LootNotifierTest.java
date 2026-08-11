@@ -76,4 +76,16 @@ public class LootNotifierTest
 
 		verify(webhookClient, never()).send(any(), any());
 	}
+
+	@Test
+	public void testSkipsEmptyLoot()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+
+		LootReceived event = new LootReceived("Some Boss", 0, LootRecordType.NPC,
+			Collections.emptyList(), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
 }
