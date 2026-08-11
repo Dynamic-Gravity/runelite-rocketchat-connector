@@ -12,6 +12,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import space.covalent.rocketchat.ClueTier;
+import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.RocketChatNotifierConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -56,11 +57,14 @@ public class ClueNotifier
 		List<String> itemLines = new ArrayList<>();
 		long totalValue = 0;
 
+		IronManMode ironManMode = config.ironManMode();
 		for (ItemStack stack : items)
 		{
-			long price = (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
-			totalValue += price;
 			ItemComposition comp = itemManager.getItemComposition(stack.getId());
+			long price = (ironManMode != null && ironManMode.isIronman())
+				? (long) comp.getHaPrice() * stack.getQuantity()
+				: (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
+			totalValue += price;
 			itemLines.add(stack.getQuantity() + "x **" + comp.getName() + "**");
 		}
 
