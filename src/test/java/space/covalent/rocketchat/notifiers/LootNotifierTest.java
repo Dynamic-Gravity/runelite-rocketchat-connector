@@ -272,12 +272,13 @@ public class LootNotifierTest
 		ItemComposition comp = mock(ItemComposition.class);
 		when(comp.getName()).thenReturn("Twisted bow");
 		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
-		when(itemManager.getItemPrice(itemId)).thenReturn(1_000_000_000);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2_000_000);
 
+		// 1/1,000,000 = 0.0001%, which rounds to "0.00" at 2 decimal places
 		doAnswer(invocation ->
 		{
 			Consumer<RarityLookupService.Rarity> callback = invocation.getArgument(2);
-			callback.accept(new RarityLookupService.Rarity("1/16,256", 100.0 / 16256));
+			callback.accept(new RarityLookupService.Rarity("1/1,000,000", 100.0 / 1_000_000));
 			return null;
 		}).when(rarityLookupService).lookup(anyString(), anyString(), any());
 
@@ -288,8 +289,7 @@ public class LootNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		String text = captor.getValue().getAttachments().get(0).getText();
-		assertTrue(text.contains("1/16,256"));
-		assertTrue(!text.contains("0.00%"));
+		assertEquals("2.0M gp\n1/1,000,000", text);
 	}
 
 	@Test
