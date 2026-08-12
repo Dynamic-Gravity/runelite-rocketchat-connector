@@ -74,62 +74,73 @@ public class RarityLookupService
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				Optional<Rarity> rarity = parse(response, sourceName);
-				cache.put(cacheKey, rarity);
-				response.close();
-				callback.accept(rarity.orElse(null));
+				if (!response.isSuccessful())
+				{
+					log.debug("Rarity lookup returned non-success status: " + response.code());
+					response.close();
+					callback.accept(null);
+					return;
+				}
+
+				try
+				{
+					Optional<Rarity> rarity = parse(response, sourceName);
+					cache.put(cacheKey, rarity);
+					response.close();
+					callback.accept(rarity.orElse(null));
+				}
+				catch (Exception e)
+				{
+					log.debug("Failed to parse rarity lookup response", e);
+					response.close();
+					callback.accept(null);
+				}
 			}
 		});
 	}
 
-	private Optional<Rarity> parse(Response response, String sourceName)
+	private Optional<Rarity> parse(Response response, String sourceName) throws Exception
 	{
-		try
+		BucketResponse body = gson.fromJson(response.body().charStream(), BucketResponse.class);
+		if (body == null || body.bucket == null)
 		{
-			BucketResponse body = gson.fromJson(response.body().charStream(), BucketResponse.class);
-			if (body == null || body.bucket == null)
+			return Optional.empty();
+		}
+
+		for (BucketRow row : body.bucket)
+		{
+			DropJson drop;
+			try
 			{
-				return Optional.empty();
+				drop = gson.fromJson(row.dropJson, DropJson.class);
+			}
+			catch (Exception e)
+			{
+				log.debug("Failed to parse drop_json for row, skipping", e);
+				continue;
 			}
 
-			for (BucketRow row : body.bucket)
+			if (drop == null || drop.droppedFrom == null || drop.rarity == null)
 			{
-				DropJson drop;
-				try
-				{
-					drop = gson.fromJson(row.dropJson, DropJson.class);
-				}
-				catch (Exception e)
-				{
-					log.debug("Failed to parse drop_json for row, skipping", e);
-					continue;
-				}
-
-				if (drop == null || drop.droppedFrom == null || drop.rarity == null)
-				{
-					continue;
-				}
-
-				String source = drop.droppedFrom.split("#", 2)[0];
-				if (!source.equalsIgnoreCase(sourceName))
-				{
-					continue;
-				}
-
-				Matcher m = FRACTION.matcher(drop.rarity.trim());
-				if (!m.matches())
-				{
-					continue;
-				}
-
-				double percent = Double.parseDouble(m.group(1)) / Double.parseDouble(m.group(2)) * 100;
-				return Optional.of(new Rarity(drop.rarity, percent));
+				continue;
 			}
+
+			String source = drop.droppedFrom.split("#", 2)[0];
+			if (!source.equalsIgnoreCase(sourceName))
+			{
+				continue;
+			}
+
+			Matcher m = FRACTION.matcher(drop.rarity.trim());
+			if (!m.matches())
+			{
+				continue;
+			}
+
+			double percent = Double.parseDouble(m.group(1)) / Double.parseDouble(m.group(2)) * 100;
+			return Optional.of(new Rarity(drop.rarity, percent));
 		}
-		catch (Exception e)
-		{
-			log.debug("Failed to parse rarity lookup response", e);
-		}
+
 		return Optional.empty();
 	}
 

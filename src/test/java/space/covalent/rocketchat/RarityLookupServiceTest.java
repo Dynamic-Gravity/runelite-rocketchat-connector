@@ -137,4 +137,30 @@ public class RarityLookupServiceTest
 		assertEquals("1/256", rarity.getRaw());
 		assertEquals(100.0 / 256, rarity.getPercent(), 0.0001);
 	}
+
+	@Test
+	public void testDoesNotCacheErrorResponse() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(500));
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":[{\"item_name\":\"Abyssal whip\",\"drop_json\":\"{\\\"Rarity\\\":\\\"1/512\\\",\\\"Dropped from\\\":\\\"Abyssal demon\\\"}\"}]}"));
+
+		awaitLookup("Abyssal whip", "Abyssal demon");
+		awaitLookup("Abyssal whip", "Abyssal demon");
+
+		assertEquals(2, server.getRequestCount());
+	}
+
+	@Test
+	public void testDoesNotCacheMalformedEnvelopeResponse() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(200).setBody("not valid json"));
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":[{\"item_name\":\"Abyssal whip\",\"drop_json\":\"{\\\"Rarity\\\":\\\"1/512\\\",\\\"Dropped from\\\":\\\"Abyssal demon\\\"}\"}]}"));
+
+		awaitLookup("Abyssal whip", "Abyssal demon");
+		awaitLookup("Abyssal whip", "Abyssal demon");
+
+		assertEquals(2, server.getRequestCount());
+	}
 }
