@@ -9,7 +9,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.client.eventbus.Subscribe;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -20,7 +20,7 @@ public class DeathNotifier
 	Client client;
 
 	@Inject
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Inject
 	WebhookClient webhookClient;

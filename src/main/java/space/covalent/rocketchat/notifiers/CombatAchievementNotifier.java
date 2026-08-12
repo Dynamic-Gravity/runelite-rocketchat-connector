@@ -10,7 +10,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
 import space.covalent.rocketchat.CombatAchievementTier;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -20,7 +20,7 @@ public class CombatAchievementNotifier
 	private static final Pattern CA_COMPLETE = Pattern.compile(
 		"Congratulations, you've completed (?:a|an) (Easy|Medium|Hard|Elite|Master|Grandmaster) combat achievement: (.+)\\.");
 
-	@Inject RocketChatNotifierConfig config;
+	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
 	@Subscribe

@@ -10,7 +10,7 @@ import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -18,7 +18,7 @@ import space.covalent.rocketchat.WebhookClient;
 public class GrandExchangeNotifier
 {
 	@Inject
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Inject
 	WebhookClient webhookClient;

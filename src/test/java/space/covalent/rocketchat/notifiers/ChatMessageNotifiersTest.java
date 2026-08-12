@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import space.covalent.rocketchat.CombatAchievementTier;
 import space.covalent.rocketchat.DiaryTier;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class ChatMessageNotifiersTest
 {
-	@Mock RocketChatNotifierConfig config;
+	@Mock RocketChatConnectorConfig config;
 	@Mock WebhookClient webhookClient;
 
 	// One @InjectMocks per notifier class

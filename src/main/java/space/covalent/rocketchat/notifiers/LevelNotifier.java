@@ -8,7 +8,7 @@ import javax.inject.Singleton;
 import net.runelite.api.Skill;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.eventbus.Subscribe;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -18,7 +18,7 @@ public class LevelNotifier
 	private static final String SKILL_ICON_BASE = "https://oldschool.runescape.wiki/images/thumb/%s_icon.png/25px-%s_icon.png";
 
 	@Inject
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Inject
 	WebhookClient webhookClient;

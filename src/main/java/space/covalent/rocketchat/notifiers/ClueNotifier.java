@@ -1,9 +1,8 @@
 package space.covalent.rocketchat.notifiers;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.Locale;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ItemComposition;
@@ -13,7 +12,9 @@ import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import space.covalent.rocketchat.ClueTier;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.OsrsWiki;
+import space.covalent.rocketchat.RarityLookupService;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -21,13 +22,16 @@ import space.covalent.rocketchat.WebhookClient;
 public class ClueNotifier
 {
 	@Inject
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Inject
 	WebhookClient webhookClient;
 
 	@Inject
 	ItemManager itemManager;
+
+	@Inject
+	RarityLookupService rarityLookupService;
 
 	@Subscribe
 	public void onLootReceived(LootReceived event)
@@ -54,39 +58,77 @@ public class ClueNotifier
 			return;
 		}
 
-		List<String> itemLines = new ArrayList<>();
-		long totalValue = 0;
-
 		IronManMode ironManMode = config.ironManMode();
+		ItemStack bestStack = null;
+		ItemComposition bestComp = null;
+		long bestPrice = -1;
+
 		for (ItemStack stack : items)
 		{
 			ItemComposition comp = itemManager.getItemComposition(stack.getId());
 			long price = (ironManMode != null && ironManMode.isIronman())
 				? (long) comp.getHaPrice() * stack.getQuantity()
 				: (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
-			totalValue += price;
-			itemLines.add(stack.getQuantity() + "x **" + comp.getName() + "**");
-		}
-
-		String body = String.join("\n", itemLines);
-		if (totalValue > 0)
-		{
-			body += "\n\n**Total:** " + formatGp(totalValue) + " gp";
+			if (price > bestPrice)
+			{
+				bestPrice = price;
+				bestStack = stack;
+				bestComp = comp;
+			}
 		}
 
 		String tierName = tier.name().charAt(0) + tier.name().substring(1).toLowerCase();
+		String wikiSource = "Reward casket (" + tier.name().toLowerCase() + ")";
+		sendCard(tierName, wikiSource, bestStack, bestComp, bestPrice);
+	}
 
-		RocketChatPayload payload = RocketChatPayload.builder()
-			.attachments(Collections.singletonList(
-				RocketChatPayload.Attachment.builder()
-					.title("📜 " + tierName + " Clue Scroll completed")
-					.text(body)
-					.color("#8B4513")
-					.build()
-			))
+	private void sendCard(String tierName, String wikiSource, ItemStack stack, ItemComposition comp, long price)
+	{
+		String itemName = comp.getName();
+		String valueLine = price > 0 ? formatGp(price) + " gp" : null;
+
+		if (config.showDropRarity())
+		{
+			rarityLookupService.lookup(itemName, wikiSource,
+				rarity -> webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, itemName, valueLine, rarity)));
+		}
+		else
+		{
+			webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, itemName, valueLine, null));
+		}
+	}
+
+	private RocketChatPayload buildPayload(String tierName, ItemStack stack, String itemName, String valueLine, RarityLookupService.Rarity rarity)
+	{
+		StringBuilder text = new StringBuilder();
+		if (valueLine != null)
+		{
+			text.append(valueLine);
+		}
+		if (rarity != null)
+		{
+			if (text.length() > 0)
+			{
+				text.append("\n");
+			}
+			text.append(formatRarityLine(rarity));
+		}
+
+		RocketChatPayload.Attachment.AttachmentBuilder attachment = RocketChatPayload.Attachment.builder()
+			.title(stack.getQuantity() + "x " + itemName)
+			.text(text.toString())
+			.color("#8B4513");
+
+		if (OsrsWiki.isLinkable(itemName))
+		{
+			attachment.titleLink(OsrsWiki.pageUrl(itemName));
+			attachment.thumbUrl(OsrsWiki.iconUrl(itemName));
+		}
+
+		return RocketChatPayload.builder()
+			.text("📜 " + tierName + " Clue Scroll completed")
+			.attachments(Collections.singletonList(attachment.build()))
 			.build();
-
-		webhookClient.send(config.webhookUrl(), payload);
 	}
 
 	private static String formatGp(long value)
@@ -100,5 +142,15 @@ public class ClueNotifier
 			return String.format("%.1fK", value / 1_000.0);
 		}
 		return String.valueOf(value);
+	}
+
+	private static String formatRarityLine(RarityLookupService.Rarity rarity)
+	{
+		String percentText = String.format(Locale.ROOT, "%.2f", rarity.getPercent());
+		if ("0.00".equals(percentText))
+		{
+			return rarity.getRaw();
+		}
+		return rarity.getRaw() + " (" + percentText + "%)";
 	}
 }

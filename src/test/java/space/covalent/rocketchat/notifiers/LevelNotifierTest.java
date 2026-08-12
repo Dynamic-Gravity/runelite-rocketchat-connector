@@ -8,7 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class LevelNotifierTest
 {
 	@Mock
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Mock
 	WebhookClient webhookClient;

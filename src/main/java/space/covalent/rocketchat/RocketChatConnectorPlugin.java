@@ -24,14 +24,28 @@ import space.covalent.rocketchat.notifiers.SlayerNotifier;
 
 @Slf4j
 @PluginDescriptor(
-	name = "Rocket.Chat Notifier",
+	name = "Rocket.Chat Connector",
 	description = "Send game event notifications to a Rocket.Chat channel via webhook",
 	tags = {"notification", "webhook", "rocketchat"}
 )
-public class RocketChatNotifierPlugin extends Plugin
+public class RocketChatConnectorPlugin extends Plugin
 {
+	private static final String OLD_CONFIG_GROUP = "rocketchat-notifier";
+	private static final String NEW_CONFIG_GROUP = "rocketchat-connector";
+
+	private static final String[] CONFIG_KEYS = {
+		"webhookUrl", "notifyOnDeath", "notifyOnLevel", "minLevel", "notifyOnLoot", "minLootValue",
+		"notifyOnClue", "minClueTier", "notifyOnPet", "notifyOnQuest", "notifyOnSlayer", "notifyOnBoss",
+		"bossPersonalBestOnly", "bossKillCountInterval", "notifyOnCollectionLog", "notifyOnCombatAchievement",
+		"minCombatAchievementTier", "notifyOnDiary", "minDiaryTier", "notifyOnChatPattern", "chatPattern",
+		"notifyOnGrandExchange", "minGrandExchangeValue", "ironManMode"
+	};
+
 	@Inject
-	private RocketChatNotifierConfig config;
+	private RocketChatConnectorConfig config;
+
+	@Inject
+	private ConfigManager configManager;
 
 	@Inject
 	private EventBus eventBus;
@@ -81,7 +95,8 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-		log.debug("Rocket.Chat Notifier started");
+		migrateConfig();
+		log.debug("Rocket.Chat Connector started");
 		eventBus.register(deathNotifier);
 		eventBus.register(levelNotifier);
 		eventBus.register(lootNotifier);
@@ -101,7 +116,7 @@ public class RocketChatNotifierPlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		log.debug("Rocket.Chat Notifier stopped");
+		log.debug("Rocket.Chat Connector stopped");
 		eventBus.unregister(deathNotifier);
 		eventBus.unregister(levelNotifier);
 		eventBus.unregister(lootNotifier);
@@ -119,8 +134,27 @@ public class RocketChatNotifierPlugin extends Plugin
 	}
 
 	@Provides
-	RocketChatNotifierConfig provideConfig(ConfigManager configManager)
+	RocketChatConnectorConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(RocketChatNotifierConfig.class);
+		return configManager.getConfig(RocketChatConnectorConfig.class);
+	}
+
+	private void migrateConfig()
+	{
+		for (String key : CONFIG_KEYS)
+		{
+			String oldValue = configManager.getConfiguration(OLD_CONFIG_GROUP, key);
+			if (oldValue == null)
+			{
+				continue;
+			}
+
+			if (configManager.getConfiguration(NEW_CONFIG_GROUP, key) == null)
+			{
+				configManager.setConfiguration(NEW_CONFIG_GROUP, key, oldValue);
+			}
+
+			configManager.unsetConfiguration(OLD_CONFIG_GROUP, key);
+		}
 	}
 }

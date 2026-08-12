@@ -9,7 +9,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -19,7 +19,7 @@ public class CollectionLogNotifier
 	private static final Pattern NEW_ENTRY = Pattern.compile(
 		"New item added to your collection log: (.+)\\.");
 
-	@Inject RocketChatNotifierConfig config;
+	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
 	@Subscribe

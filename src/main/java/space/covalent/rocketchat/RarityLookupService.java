@@ -1,0 +1,169 @@
+package space.covalent.rocketchat;
+
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
+@Slf4j
+@Singleton
+public class RarityLookupService
+{
+	private static final Pattern FRACTION = Pattern.compile("^(\\d+)/(\\d+)$");
+
+	@Inject
+	OkHttpClient okHttpClient;
+
+	@Inject
+	Gson gson;
+
+	String apiUrl = "https://oldschool.runescape.wiki/api.php";
+
+	private final Map<String, Optional<Rarity>> cache = new ConcurrentHashMap<>();
+
+	@Value
+	public static class Rarity
+	{
+		String raw;
+		double percent;
+	}
+
+	public void lookup(String itemName, String sourceName, Consumer<Rarity> callback)
+	{
+		String cacheKey = itemName + "|" + sourceName;
+		Optional<Rarity> cached = cache.get(cacheKey);
+		if (cached != null)
+		{
+			callback.accept(cached.orElse(null));
+			return;
+		}
+
+		String query = "bucket('dropsline').select('item_name','drop_json').where('item_name','"
+			+ itemName.replace("'", "\\'") + "').run()";
+		HttpUrl url = HttpUrl.parse(apiUrl).newBuilder()
+			.addQueryParameter("action", "bucket")
+			.addQueryParameter("format", "json")
+			.addQueryParameter("query", query)
+			.build();
+
+		okHttpClient.newCall(new Request.Builder().url(url).build()).enqueue(new Callback()
+		{
+			@Override
+			public void onFailure(Call call, IOException e)
+			{
+				log.debug("Rarity lookup failed", e);
+				callback.accept(null);
+			}
+
+			@Override
+			public void onResponse(Call call, Response response)
+			{
+				if (!response.isSuccessful())
+				{
+					log.debug("Rarity lookup returned non-success status: {}", response.code());
+					response.close();
+					callback.accept(null);
+					return;
+				}
+
+				Rarity result = null;
+				try
+				{
+					Optional<Rarity> rarity = parse(response, sourceName);
+					cache.put(cacheKey, rarity);
+					result = rarity.orElse(null);
+				}
+				catch (Exception e)
+				{
+					log.debug("Failed to parse rarity lookup response", e);
+				}
+				finally
+				{
+					response.close();
+				}
+				callback.accept(result);
+			}
+		});
+	}
+
+	private Optional<Rarity> parse(Response response, String sourceName) throws Exception
+	{
+		BucketResponse body = gson.fromJson(response.body().charStream(), BucketResponse.class);
+		if (body == null || body.bucket == null)
+		{
+			return Optional.empty();
+		}
+
+		for (BucketRow row : body.bucket)
+		{
+			DropJson drop;
+			try
+			{
+				drop = gson.fromJson(row.dropJson, DropJson.class);
+			}
+			catch (Exception e)
+			{
+				log.debug("Failed to parse drop_json for row, skipping", e);
+				continue;
+			}
+
+			if (drop == null || drop.droppedFrom == null || drop.rarity == null)
+			{
+				continue;
+			}
+
+			String source = drop.droppedFrom.split("#", 2)[0];
+			if (!source.equalsIgnoreCase(sourceName))
+			{
+				continue;
+			}
+
+			String normalized = drop.rarity.trim().replaceAll("^~", "").replace(",", "");
+			Matcher m = FRACTION.matcher(normalized);
+			if (!m.matches())
+			{
+				continue;
+			}
+
+			double percent = Double.parseDouble(m.group(1)) / Double.parseDouble(m.group(2)) * 100;
+			return Optional.of(new Rarity(drop.rarity, percent));
+		}
+
+		return Optional.empty();
+	}
+
+	private static class BucketResponse
+	{
+		List<BucketRow> bucket;
+	}
+
+	private static class BucketRow
+	{
+		@SerializedName("drop_json")
+		String dropJson;
+	}
+
+	private static class DropJson
+	{
+		@SerializedName("Rarity")
+		String rarity;
+		@SerializedName("Dropped from")
+		String droppedFrom;
+	}
+}

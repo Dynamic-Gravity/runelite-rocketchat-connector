@@ -10,7 +10,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
 import space.covalent.rocketchat.DiaryTier;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -20,7 +20,7 @@ public class DiaryNotifier
 	private static final Pattern DIARY_COMPLETE = Pattern.compile(
 		"Congratulations! You have completed all of the (.+) (Easy|Medium|Hard|Elite) Diary tasks\\.");
 
-	@Inject RocketChatNotifierConfig config;
+	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
 	@Subscribe
