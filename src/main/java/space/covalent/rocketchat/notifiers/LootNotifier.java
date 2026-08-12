@@ -1,9 +1,7 @@
 package space.covalent.rocketchat.notifiers;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ItemComposition;
@@ -13,6 +11,8 @@ import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import space.covalent.rocketchat.ClueTier;
 import space.covalent.rocketchat.IronManMode;
+import space.covalent.rocketchat.OsrsWiki;
+import space.covalent.rocketchat.RarityLookupService;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -28,6 +28,9 @@ public class LootNotifier
 
 	@Inject
 	ItemManager itemManager;
+
+	@Inject
+	RarityLookupService rarityLookupService;
 
 	@Subscribe
 	public void onLootReceived(LootReceived event)
@@ -49,38 +52,72 @@ public class LootNotifier
 			return;
 		}
 
-		long totalValue = 0;
-		List<String> itemLines = new ArrayList<>();
-
 		IronManMode ironManMode = config.ironManMode();
+		ItemStack bestStack = null;
+		ItemComposition bestComp = null;
+		long bestPrice = -1;
+
 		for (ItemStack stack : items)
 		{
 			ItemComposition comp = itemManager.getItemComposition(stack.getId());
 			long price = (ironManMode != null && ironManMode.isIronman())
 				? (long) comp.getHaPrice() * stack.getQuantity()
 				: (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
-			totalValue += price;
-			itemLines.add(stack.getQuantity() + "x **" + comp.getName() + "** (" + formatGp(price) + " gp)");
+			if (price > bestPrice)
+			{
+				bestPrice = price;
+				bestStack = stack;
+				bestComp = comp;
+			}
 		}
 
-		if (totalValue < config.minLootValue())
+		if (bestPrice < config.minLootValue())
 		{
 			return;
 		}
 
-		String body = String.join("\n", itemLines) + "\n\n**Total:** " + formatGp(totalValue) + " gp";
+		sendCard(event.getName(), bestStack, bestComp, bestPrice);
+	}
 
-		RocketChatPayload payload = RocketChatPayload.builder()
-			.attachments(Collections.singletonList(
-				RocketChatPayload.Attachment.builder()
-					.title("💰 Loot from " + event.getName())
-					.text(body)
-					.color("#FFD700")
-					.build()
-			))
+	private void sendCard(String source, ItemStack stack, ItemComposition comp, long price)
+	{
+		String itemName = comp.getName();
+		String valueLine = formatGp(price) + " gp";
+
+		if (config.showDropRarity())
+		{
+			rarityLookupService.lookup(itemName, source,
+				rarity -> webhookClient.send(config.webhookUrl(), buildPayload(source, stack, itemName, valueLine, rarity)));
+		}
+		else
+		{
+			webhookClient.send(config.webhookUrl(), buildPayload(source, stack, itemName, valueLine, null));
+		}
+	}
+
+	private RocketChatPayload buildPayload(String source, ItemStack stack, String itemName, String valueLine, RarityLookupService.Rarity rarity)
+	{
+		String text = valueLine;
+		if (rarity != null)
+		{
+			text += "\n" + rarity.getRaw() + " (" + String.format("%.2f%%", rarity.getPercent()) + ")";
+		}
+
+		RocketChatPayload.Attachment.AttachmentBuilder attachment = RocketChatPayload.Attachment.builder()
+			.title(stack.getQuantity() + "x " + itemName)
+			.text(text)
+			.color("#FFD700");
+
+		if (OsrsWiki.isLinkable(itemName))
+		{
+			attachment.titleLink(OsrsWiki.pageUrl(itemName));
+			attachment.thumbUrl(OsrsWiki.iconUrl(itemName));
+		}
+
+		return RocketChatPayload.builder()
+			.text("💰 Loot from " + source)
+			.attachments(Collections.singletonList(attachment.build()))
 			.build();
-
-		webhookClient.send(config.webhookUrl(), payload);
 	}
 
 	private static String formatGp(long value)

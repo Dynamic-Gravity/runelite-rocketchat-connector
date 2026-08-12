@@ -105,6 +105,18 @@ public interface RocketChatConnectorConfig extends Config
 		return 100000;
 	}
 
+	@ConfigItem(
+		keyName = "showDropRarity",
+		name = "Show drop rarity",
+		description = "Look up and display the item's drop rarity from the OSRS Wiki",
+		section = lootSection,
+		warning = "This feature submits your IP address to a 3rd-party server not controlled or verified by RuneLite developers"
+	)
+	default boolean showDropRarity()
+	{
+		return false;
+	}
+
 	@ConfigSection(
 		name = "Clue Scrolls",
 		description = "Notifications when you complete a clue scroll",
