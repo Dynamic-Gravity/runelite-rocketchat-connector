@@ -9,7 +9,7 @@ import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -21,7 +21,7 @@ public class BossNotifier
 	private static final Pattern FIGHT_DURATION = Pattern.compile(
 		"Fight duration: ([\\d:]+)\\.(?:.* Personal best: ([\\d:]+))?");
 
-	@Inject RocketChatNotifierConfig config;
+	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
 	@Subscribe

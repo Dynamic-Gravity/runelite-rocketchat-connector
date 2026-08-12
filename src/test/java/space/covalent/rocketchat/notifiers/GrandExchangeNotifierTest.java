@@ -12,7 +12,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class GrandExchangeNotifierTest
 {
-	@Mock RocketChatNotifierConfig config;
+	@Mock RocketChatConnectorConfig config;
 	@Mock WebhookClient webhookClient;
 	@Mock ItemManager itemManager;
 

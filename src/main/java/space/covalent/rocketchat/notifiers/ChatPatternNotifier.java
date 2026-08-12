@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -17,7 +17,7 @@ import space.covalent.rocketchat.WebhookClient;
 @Singleton
 public class ChatPatternNotifier
 {
-	@Inject RocketChatNotifierConfig config;
+	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
 	private String lastRawPattern = null;

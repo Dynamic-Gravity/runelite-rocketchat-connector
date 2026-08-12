@@ -13,7 +13,7 @@ import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import space.covalent.rocketchat.ClueTier;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
@@ -21,7 +21,7 @@ import space.covalent.rocketchat.WebhookClient;
 public class ClueNotifier
 {
 	@Inject
-	RocketChatNotifierConfig config;
+	RocketChatConnectorConfig config;
 
 	@Inject
 	WebhookClient webhookClient;

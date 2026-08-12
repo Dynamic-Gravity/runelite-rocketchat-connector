@@ -10,7 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import space.covalent.rocketchat.IronManMode;
-import space.covalent.rocketchat.RocketChatNotifierConfig;
+import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.WebhookClient;
 
 import static org.mockito.Mockito.*;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
 public class HardcoreStatusNotifierTest
 {
     @Mock Client client;
-    @Mock RocketChatNotifierConfig config;
+    @Mock RocketChatConnectorConfig config;
     @Mock WebhookClient webhookClient;
 
     @InjectMocks HardcoreStatusNotifier notifier;

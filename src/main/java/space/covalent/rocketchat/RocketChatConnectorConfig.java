@@ -6,8 +6,8 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 
-@ConfigGroup("rocketchat-notifier")
-public interface RocketChatNotifierConfig extends Config
+@ConfigGroup("rocketchat-connector")
+public interface RocketChatConnectorConfig extends Config
 {
 	@ConfigSection(
 		name = "Webhook",

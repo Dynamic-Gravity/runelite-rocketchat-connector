@@ -1,4 +1,4 @@
-# Rocket.Chat Notifier
+# Rocket.Chat Connector
 
 A RuneLite plugin that sends game event notifications to a self-hosted [Rocket.Chat](https://rocket.chat) instance via incoming webhook. Equivalent to [Dink](https://github.com/pajlads/DinkPlugin) but targeting Rocket.Chat instead of Discord.
 
@@ -6,7 +6,7 @@ A RuneLite plugin that sends game event notifications to a self-hosted [Rocket.C
 
 1. Create an incoming webhook in Rocket.Chat: **Administration → Integrations → New → Incoming**
 2. Copy the webhook URL
-3. In RuneLite, open **Plugin Hub**, install **Rocket.Chat Notifier**
+3. In RuneLite, open **Plugin Hub**, install **Rocket.Chat Connector**
 4. Open the plugin config panel, paste the webhook URL
 5. Enable the notification types you want (all default to off)
 
