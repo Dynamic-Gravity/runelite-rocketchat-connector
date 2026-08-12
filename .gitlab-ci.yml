@@ -1,5 +1,6 @@
 stages:
   - test
+  - release
   - mirror
 
 test:
@@ -15,6 +16,69 @@ test:
   script:
     - chmod +x gradlew
     - ./gradlew --no-daemon build test
+
+release:
+  stage: release
+  image:
+    name: alpine/git:latest
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_SERVER_HOST == "git.covalent.space"'
+  script:
+    - |
+      set -e
+
+      if git log -1 --pretty=%s | grep -q '\[skip release\]'; then
+        echo "Last commit is a release bump, skipping to avoid a loop"
+        exit 0
+      fi
+
+      LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+      if [ -z "$LAST_TAG" ]; then
+        RANGE="HEAD"
+      else
+        RANGE="${LAST_TAG}..HEAD"
+      fi
+
+      COMMITS=$(git log $RANGE --pretty=%s)
+
+      if echo "$COMMITS" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:|BREAKING CHANGE'; then
+        BUMP=major
+      elif echo "$COMMITS" | grep -qE '^feat(\([^)]*\))?:'; then
+        BUMP=minor
+      elif echo "$COMMITS" | grep -qE '^fix(\([^)]*\))?:'; then
+        BUMP=patch
+      else
+        echo "No feat/fix commits since ${LAST_TAG:-the beginning}, skipping release"
+        exit 0
+      fi
+
+      CURRENT_VERSION=$(grep -oE '^version=[0-9]+\.[0-9]+\.[0-9]+' runelite-plugin.properties | cut -d= -f2)
+      MAJOR=${CURRENT_VERSION%%.*}
+      REST=${CURRENT_VERSION#*.}
+      MINOR=${REST%%.*}
+      PATCH=${REST#*.}
+
+      case "$BUMP" in
+        major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+        minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+        patch) PATCH=$((PATCH + 1)) ;;
+      esac
+
+      NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+      echo "Bumping version: ${CURRENT_VERSION} -> ${NEW_VERSION} (${BUMP})"
+
+      sed -i "s/^version=.*/version=${NEW_VERSION}/" runelite-plugin.properties
+
+      git config user.name "CI Release Bot"
+      git config user.email "ci@git.covalent.space"
+      git add runelite-plugin.properties
+      git commit -m "chore: bump version to v${NEW_VERSION} [skip release]"
+      git tag "v${NEW_VERSION}"
+      git push "https://oauth2:${RELEASE_TOKEN}@git.covalent.space/luke/runelite-rocketchat-connector.git" HEAD:refs/heads/master "refs/tags/v${NEW_VERSION}"
 
 mirror-gitlab:
   stage: mirror
