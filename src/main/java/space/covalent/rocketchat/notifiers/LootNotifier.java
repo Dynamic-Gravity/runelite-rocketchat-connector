@@ -2,6 +2,7 @@ package space.covalent.rocketchat.notifiers;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ItemComposition;
@@ -100,7 +101,7 @@ public class LootNotifier
 		String text = valueLine;
 		if (rarity != null)
 		{
-			text += "\n" + rarity.getRaw() + " (" + String.format("%.2f%%", rarity.getPercent()) + ")";
+			text += "\n" + formatRarityLine(rarity);
 		}
 
 		RocketChatPayload.Attachment.AttachmentBuilder attachment = RocketChatPayload.Attachment.builder()
@@ -131,5 +132,15 @@ public class LootNotifier
 			return String.format("%.1fK", value / 1_000.0);
 		}
 		return String.valueOf(value);
+	}
+
+	private static String formatRarityLine(RarityLookupService.Rarity rarity)
+	{
+		String percentText = String.format(Locale.ROOT, "%.2f", rarity.getPercent());
+		if ("0.00".equals(percentText))
+		{
+			return rarity.getRaw();
+		}
+		return rarity.getRaw() + " (" + percentText + "%)";
 	}
 }

@@ -29,7 +29,7 @@ public final class OsrsWiki
 		String underscored = value.replace(' ', '_');
 		try
 		{
-			return URLEncoder.encode(underscored, "UTF-8").replace("+", "%20");
+			return URLEncoder.encode(underscored, "UTF-8");
 		}
 		catch (UnsupportedEncodingException e)
 		{

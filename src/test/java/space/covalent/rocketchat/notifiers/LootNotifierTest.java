@@ -228,6 +228,71 @@ public class LootNotifierTest
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	public void testRarityLookupNoMatchStillSendsWithoutRarityLine()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.showDropRarity()).thenReturn(true);
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000000);
+
+		doAnswer(invocation ->
+		{
+			Consumer<RarityLookupService.Rarity> callback = invocation.getArgument(2);
+			callback.accept(null);
+			return null;
+		}).when(rarityLookupService).lookup(anyString(), anyString(), any());
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		String text = captor.getValue().getAttachments().get(0).getText();
+		assertEquals("2.0M gp", text);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testTinyRarityPercentageOmitsMisleadingZero()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.showDropRarity()).thenReturn(true);
+
+		int itemId = 20997;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Twisted bow");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(1_000_000_000);
+
+		doAnswer(invocation ->
+		{
+			Consumer<RarityLookupService.Rarity> callback = invocation.getArgument(2);
+			callback.accept(new RarityLookupService.Rarity("1/16,256", 100.0 / 16256));
+			return null;
+		}).when(rarityLookupService).lookup(anyString(), anyString(), any());
+
+		LootReceived event = new LootReceived("Chambers of Xeric", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		String text = captor.getValue().getAttachments().get(0).getText();
+		assertTrue(text.contains("1/16,256"));
+		assertTrue(!text.contains("0.00%"));
+	}
+
+	@Test
 	public void testRarityLookupSkippedWhenDisabled()
 	{
 		when(config.notifyOnLoot()).thenReturn(true);
