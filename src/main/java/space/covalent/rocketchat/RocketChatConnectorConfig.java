@@ -97,7 +97,7 @@ public interface RocketChatConnectorConfig extends Config
 	@ConfigItem(
 		keyName = "minLootValue",
 		name = "Minimum loot value",
-		description = "Only notify if total loot value (GE) meets this threshold (gp)",
+		description = "Only notify if the highest-value item's price (GE) meets this threshold (gp)",
 		section = lootSection
 	)
 	default int minLootValue()
@@ -108,7 +108,7 @@ public interface RocketChatConnectorConfig extends Config
 	@ConfigItem(
 		keyName = "showDropRarity",
 		name = "Show drop rarity",
-		description = "Look up and display the item's drop rarity from the OSRS Wiki",
+		description = "Look up and display the item's drop rarity from the OSRS Wiki. Applies to both Loot and Clue Scroll notifications",
 		section = lootSection,
 		warning = "This feature submits your IP address to a 3rd-party server not controlled or verified by RuneLite developers"
 	)
