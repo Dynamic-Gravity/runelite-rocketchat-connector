@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -161,5 +162,126 @@ public class ClueNotifierTest
 		verify(webhookClient).send(any(), captor.capture());
 		String text = captor.getValue().getAttachments().get(0).getText();
 		assertTrue(text.contains("12/128 (9.38%)"));
+	}
+
+	@Test
+	public void testRarityLookupUsesCasketSourceNameNotEventName()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.showDropRarity()).thenReturn(true);
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Wooden shield (g)");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(rarityLookupService).lookup(eq("Wooden shield (g)"), eq("Reward casket (easy)"), any());
+	}
+
+	@Test
+	public void testRarityLookupSkippedWhenDisabled()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.showDropRarity()).thenReturn(false);
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000000);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(rarityLookupService, never()).lookup(any(), any(), any());
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testCoinsOmitsWikiLink()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		int itemId = 995;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Coins");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(1000);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1000)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertNull(attachment.getTitleLink());
+		assertNull(attachment.getThumbUrl());
+	}
+
+	@Test
+	public void testZeroPriceOmitsValueLine()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		int itemId = 314;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Clue scroll (easy)");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(0);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		String text = captor.getValue().getAttachments().get(0).getText();
+		assertEquals("", text);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testRarityLookupNoMatchStillSendsWithoutRarityLine()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.showDropRarity()).thenReturn(true);
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000000);
+
+		doAnswer(invocation ->
+		{
+			Consumer<RarityLookupService.Rarity> callback = invocation.getArgument(2);
+			callback.accept(null);
+			return null;
+		}).when(rarityLookupService).lookup(anyString(), anyString(), any());
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		String text = captor.getValue().getAttachments().get(0).getText();
+		assertEquals("2.0M gp", text);
 	}
 }

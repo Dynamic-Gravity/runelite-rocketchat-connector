@@ -76,25 +76,28 @@ public class RarityLookupService
 			{
 				if (!response.isSuccessful())
 				{
-					log.debug("Rarity lookup returned non-success status: " + response.code());
+					log.debug("Rarity lookup returned non-success status: {}", response.code());
 					response.close();
 					callback.accept(null);
 					return;
 				}
 
+				Rarity result = null;
 				try
 				{
 					Optional<Rarity> rarity = parse(response, sourceName);
 					cache.put(cacheKey, rarity);
-					response.close();
-					callback.accept(rarity.orElse(null));
+					result = rarity.orElse(null);
 				}
 				catch (Exception e)
 				{
 					log.debug("Failed to parse rarity lookup response", e);
-					response.close();
-					callback.accept(null);
 				}
+				finally
+				{
+					response.close();
+				}
+				callback.accept(result);
 			}
 		});
 	}
@@ -131,7 +134,8 @@ public class RarityLookupService
 				continue;
 			}
 
-			Matcher m = FRACTION.matcher(drop.rarity.trim());
+			String normalized = drop.rarity.trim().replaceAll("^~", "").replace(",", "");
+			Matcher m = FRACTION.matcher(normalized);
 			if (!m.matches())
 			{
 				continue;

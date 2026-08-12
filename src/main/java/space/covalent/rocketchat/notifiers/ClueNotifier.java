@@ -2,6 +2,7 @@ package space.covalent.rocketchat.notifiers;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ItemComposition;
@@ -77,17 +78,18 @@ public class ClueNotifier
 		}
 
 		String tierName = tier.name().charAt(0) + tier.name().substring(1).toLowerCase();
-		sendCard(tierName, event.getName(), bestStack, bestComp, bestPrice);
+		String wikiSource = "Reward casket (" + tier.name().toLowerCase() + ")";
+		sendCard(tierName, wikiSource, bestStack, bestComp, bestPrice);
 	}
 
-	private void sendCard(String tierName, String source, ItemStack stack, ItemComposition comp, long price)
+	private void sendCard(String tierName, String wikiSource, ItemStack stack, ItemComposition comp, long price)
 	{
 		String itemName = comp.getName();
 		String valueLine = price > 0 ? formatGp(price) + " gp" : null;
 
 		if (config.showDropRarity())
 		{
-			rarityLookupService.lookup(itemName, source,
+			rarityLookupService.lookup(itemName, wikiSource,
 				rarity -> webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, itemName, valueLine, rarity)));
 		}
 		else
@@ -109,7 +111,7 @@ public class ClueNotifier
 			{
 				text.append("\n");
 			}
-			text.append(rarity.getRaw()).append(" (").append(String.format("%.2f%%", rarity.getPercent())).append(")");
+			text.append(formatRarityLine(rarity));
 		}
 
 		RocketChatPayload.Attachment.AttachmentBuilder attachment = RocketChatPayload.Attachment.builder()
@@ -140,5 +142,15 @@ public class ClueNotifier
 			return String.format("%.1fK", value / 1_000.0);
 		}
 		return String.valueOf(value);
+	}
+
+	private static String formatRarityLine(RarityLookupService.Rarity rarity)
+	{
+		String percentText = String.format(Locale.ROOT, "%.2f", rarity.getPercent());
+		if ("0.00".equals(percentText))
+		{
+			return rarity.getRaw();
+		}
+		return rarity.getRaw() + " (" + percentText + "%)";
 	}
 }

@@ -152,6 +152,29 @@ public class RarityLookupServiceTest
 	}
 
 	@Test
+	public void testParsesCommaGroupedRarity() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":[{\"item_name\":\"Twisted bow\",\"drop_json\":\"{\\\"Rarity\\\":\\\"1/16,256\\\",\\\"Dropped from\\\":\\\"Chambers of Xeric\\\"}\"}]}"));
+
+		RarityLookupService.Rarity rarity = awaitLookup("Twisted bow", "Chambers of Xeric");
+
+		assertEquals("1/16,256", rarity.getRaw());
+		assertEquals(100.0 / 16256, rarity.getPercent(), 0.0001);
+	}
+
+	@Test
+	public void testParsesApproximateRarityWithLeadingTilde() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":[{\"item_name\":\"Dragon warhammer\",\"drop_json\":\"{\\\"Rarity\\\":\\\"~1/1,133\\\",\\\"Dropped from\\\":\\\"General Graardor\\\"}\"}]}"));
+
+		RarityLookupService.Rarity rarity = awaitLookup("Dragon warhammer", "General Graardor");
+
+		assertEquals(100.0 / 1133, rarity.getPercent(), 0.0001);
+	}
+
+	@Test
 	public void testDoesNotCacheMalformedEnvelopeResponse() throws InterruptedException
 	{
 		server.enqueue(new MockResponse().setResponseCode(200).setBody("not valid json"));
