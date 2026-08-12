@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -34,7 +35,7 @@ public class RarityLookupService
 
 	String apiUrl = "https://oldschool.runescape.wiki/api.php";
 
-	private final Map<String, Rarity> cache = new ConcurrentHashMap<>();
+	private final Map<String, Optional<Rarity>> cache = new ConcurrentHashMap<>();
 
 	@Value
 	public static class Rarity
@@ -46,10 +47,10 @@ public class RarityLookupService
 	public void lookup(String itemName, String sourceName, Consumer<Rarity> callback)
 	{
 		String cacheKey = itemName + "|" + sourceName;
-		Rarity cached = cache.get(cacheKey);
+		Optional<Rarity> cached = cache.get(cacheKey);
 		if (cached != null)
 		{
-			callback.accept(cached);
+			callback.accept(cached.orElse(null));
 			return;
 		}
 
@@ -73,30 +74,37 @@ public class RarityLookupService
 			@Override
 			public void onResponse(Call call, Response response)
 			{
-				Rarity rarity = parse(response, sourceName);
-				if (rarity != null)
-				{
-					cache.put(cacheKey, rarity);
-				}
+				Optional<Rarity> rarity = parse(response, sourceName);
+				cache.put(cacheKey, rarity);
 				response.close();
-				callback.accept(rarity);
+				callback.accept(rarity.orElse(null));
 			}
 		});
 	}
 
-	private Rarity parse(Response response, String sourceName)
+	private Optional<Rarity> parse(Response response, String sourceName)
 	{
 		try
 		{
 			BucketResponse body = gson.fromJson(response.body().charStream(), BucketResponse.class);
 			if (body == null || body.bucket == null)
 			{
-				return null;
+				return Optional.empty();
 			}
 
 			for (BucketRow row : body.bucket)
 			{
-				DropJson drop = gson.fromJson(row.dropJson, DropJson.class);
+				DropJson drop;
+				try
+				{
+					drop = gson.fromJson(row.dropJson, DropJson.class);
+				}
+				catch (Exception e)
+				{
+					log.debug("Failed to parse drop_json for row, skipping", e);
+					continue;
+				}
+
 				if (drop == null || drop.droppedFrom == null || drop.rarity == null)
 				{
 					continue;
@@ -115,14 +123,14 @@ public class RarityLookupService
 				}
 
 				double percent = Double.parseDouble(m.group(1)) / Double.parseDouble(m.group(2)) * 100;
-				return new Rarity(drop.rarity, percent);
+				return Optional.of(new Rarity(drop.rarity, percent));
 			}
 		}
 		catch (Exception e)
 		{
 			log.debug("Failed to parse rarity lookup response", e);
 		}
-		return null;
+		return Optional.empty();
 	}
 
 	private static class BucketResponse

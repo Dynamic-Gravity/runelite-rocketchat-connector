@@ -110,4 +110,31 @@ public class RarityLookupServiceTest
 
 		assertEquals(1, server.getRequestCount());
 	}
+
+	@Test
+	public void testCachesNegativeLookup() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":[{\"item_name\":\"Abyssal whip\",\"drop_json\":\"{\\\"Rarity\\\":\\\"1/512\\\",\\\"Dropped from\\\":\\\"Abyssal demon\\\"}\"}]}"));
+
+		awaitLookup("Abyssal whip", "Greater abyssal demon");
+		awaitLookup("Abyssal whip", "Greater abyssal demon");
+
+		assertEquals(1, server.getRequestCount());
+	}
+
+	@Test
+	public void testSkipsMalformedDropJson() throws InterruptedException
+	{
+		server.enqueue(new MockResponse().setResponseCode(200).setBody(
+			"{\"bucket\":["
+				+ "{\"item_name\":\"Test item\",\"drop_json\":\"malformed json\"},"
+				+ "{\"item_name\":\"Test item\",\"drop_json\":\"{\\\"Rarity\\\":\\\"1/256\\\",\\\"Dropped from\\\":\\\"Test source\\\"}\"}"
+				+ "]}"));
+
+		RarityLookupService.Rarity rarity = awaitLookup("Test item", "Test source");
+
+		assertEquals("1/256", rarity.getRaw());
+		assertEquals(100.0 / 256, rarity.getPercent(), 0.0001);
+	}
 }
