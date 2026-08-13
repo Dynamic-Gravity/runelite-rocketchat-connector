@@ -284,4 +284,115 @@ public class ClueNotifierTest
 		String text = captor.getValue().getAttachments().get(0).getText();
 		assertEquals("2.0M gp", text);
 	}
+
+	@Test
+	public void testWhitelistedItemWinsOverHigherValueItem()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("Rune arrow");
+
+		int expensiveId = 4151;
+		ItemComposition expensiveComp = mock(ItemComposition.class);
+		when(expensiveComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(expensiveId)).thenReturn(expensiveComp);
+		when(itemManager.getItemPrice(expensiveId)).thenReturn(2000000);
+
+		int whitelistedId = 892;
+		ItemComposition whitelistedComp = mock(ItemComposition.class);
+		when(whitelistedComp.getName()).thenReturn("Rune arrow");
+		when(itemManager.getItemComposition(whitelistedId)).thenReturn(whitelistedComp);
+		when(itemManager.getItemPrice(whitelistedId)).thenReturn(100);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Arrays.asList(new ItemStack(expensiveId, 1), new ItemStack(whitelistedId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Rune arrow", attachment.getTitle());
+	}
+
+	@Test
+	public void testIgnoredItemFallsBackToNextBest()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemIgnorelist()).thenReturn("Abyssal whip");
+
+		int expensiveId = 4151;
+		ItemComposition expensiveComp = mock(ItemComposition.class);
+		when(expensiveComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(expensiveId)).thenReturn(expensiveComp);
+		lenient().when(itemManager.getItemPrice(expensiveId)).thenReturn(2000000);
+
+		int cheapId = 526;
+		ItemComposition cheapComp = mock(ItemComposition.class);
+		when(cheapComp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(cheapId)).thenReturn(cheapComp);
+		when(itemManager.getItemPrice(cheapId)).thenReturn(50);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Arrays.asList(new ItemStack(expensiveId, 1), new ItemStack(cheapId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Bones", attachment.getTitle());
+		verify(itemManager, never()).getItemPrice(expensiveId);
+	}
+
+	@Test
+	public void testAllItemsIgnoredSendsNothing()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.itemIgnorelist()).thenReturn("Bones");
+
+		int itemId = 526;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testItemOnBothListsIsTreatedAsIgnored()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("Bones");
+		when(config.itemIgnorelist()).thenReturn("Bones");
+
+		int ignoredId = 526;
+		ItemComposition ignoredComp = mock(ItemComposition.class);
+		when(ignoredComp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(ignoredId)).thenReturn(ignoredComp);
+		lenient().when(itemManager.getItemPrice(ignoredId)).thenReturn(5000000);
+
+		int otherId = 4151;
+		ItemComposition otherComp = mock(ItemComposition.class);
+		when(otherComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(otherId)).thenReturn(otherComp);
+		when(itemManager.getItemPrice(otherId)).thenReturn(2000000);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Arrays.asList(new ItemStack(ignoredId, 1), new ItemStack(otherId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Abyssal whip", attachment.getTitle());
+	}
 }

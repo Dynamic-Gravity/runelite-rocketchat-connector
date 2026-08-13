@@ -313,4 +313,141 @@ public class LootNotifierTest
 		verify(rarityLookupService, never()).lookup(any(), any(), any());
 		verify(webhookClient).send(any(), any());
 	}
+
+	@Test
+	public void testWhitelistedItemWinsOverHigherValueItem()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.showDropRarity()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("Rune arrow");
+		when(config.itemIgnorelist()).thenReturn("");
+
+		int expensiveId = 4151;
+		ItemComposition expensiveComp = mock(ItemComposition.class);
+		when(expensiveComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(expensiveId)).thenReturn(expensiveComp);
+		when(itemManager.getItemPrice(expensiveId)).thenReturn(2000000);
+
+		int whitelistedId = 892;
+		ItemComposition whitelistedComp = mock(ItemComposition.class);
+		when(whitelistedComp.getName()).thenReturn("Rune arrow");
+		when(itemManager.getItemComposition(whitelistedId)).thenReturn(whitelistedComp);
+		when(itemManager.getItemPrice(whitelistedId)).thenReturn(100);
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Arrays.asList(new ItemStack(expensiveId, 1), new ItemStack(whitelistedId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Rune arrow", attachment.getTitle());
+	}
+
+	@Test
+	public void testWhitelistedItemBypassesMinLootValue()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.showDropRarity()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("Rune arrow");
+		when(config.itemIgnorelist()).thenReturn("");
+
+		int itemId = 892;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Rune arrow");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(100);
+
+		LootReceived event = new LootReceived("Goblin", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient).send(any(), any());
+		verify(config, never()).minLootValue();
+	}
+
+	@Test
+	public void testIgnoredItemFallsBackToNextBest()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(0);
+		when(config.showDropRarity()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("");
+		when(config.itemIgnorelist()).thenReturn("Abyssal whip");
+
+		int expensiveId = 4151;
+		ItemComposition expensiveComp = mock(ItemComposition.class);
+		when(expensiveComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(expensiveId)).thenReturn(expensiveComp);
+		lenient().when(itemManager.getItemPrice(expensiveId)).thenReturn(2000000);
+
+		int cheapId = 526;
+		ItemComposition cheapComp = mock(ItemComposition.class);
+		when(cheapComp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(cheapId)).thenReturn(cheapComp);
+		when(itemManager.getItemPrice(cheapId)).thenReturn(50);
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Arrays.asList(new ItemStack(expensiveId, 1), new ItemStack(cheapId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Bones", attachment.getTitle());
+		verify(itemManager, never()).getItemPrice(expensiveId);
+	}
+
+	@Test
+	public void testAllItemsIgnoredSendsNothing()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.itemIgnorelist()).thenReturn("Bones");
+
+		int itemId = 526;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+
+		LootReceived event = new LootReceived("Goblin", 0, LootRecordType.NPC,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testItemOnBothListsIsTreatedAsIgnored()
+	{
+		when(config.notifyOnLoot()).thenReturn(true);
+		when(config.minLootValue()).thenReturn(0);
+		when(config.showDropRarity()).thenReturn(false);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		when(config.itemWhitelist()).thenReturn("Bones");
+		when(config.itemIgnorelist()).thenReturn("Bones");
+
+		int ignoredId = 526;
+		ItemComposition ignoredComp = mock(ItemComposition.class);
+		when(ignoredComp.getName()).thenReturn("Bones");
+		when(itemManager.getItemComposition(ignoredId)).thenReturn(ignoredComp);
+		lenient().when(itemManager.getItemPrice(ignoredId)).thenReturn(5000000);
+
+		int otherId = 4151;
+		ItemComposition otherComp = mock(ItemComposition.class);
+		when(otherComp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(otherId)).thenReturn(otherComp);
+		when(itemManager.getItemPrice(otherId)).thenReturn(2000000);
+
+		LootReceived event = new LootReceived("Abyssal Sire", 0, LootRecordType.NPC,
+			Arrays.asList(new ItemStack(ignoredId, 1), new ItemStack(otherId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("1x Abyssal whip", attachment.getTitle());
+	}
 }

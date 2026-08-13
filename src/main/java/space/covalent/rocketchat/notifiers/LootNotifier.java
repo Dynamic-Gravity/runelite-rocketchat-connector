@@ -11,6 +11,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import space.covalent.rocketchat.ClueTier;
+import space.covalent.rocketchat.ItemFilter;
 import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.OsrsWiki;
 import space.covalent.rocketchat.RarityLookupService;
@@ -54,25 +55,55 @@ public class LootNotifier
 		}
 
 		IronManMode ironManMode = config.ironManMode();
+		String whitelist = config.itemWhitelist();
+		String ignorelist = config.itemIgnorelist();
+
 		ItemStack bestStack = null;
 		ItemComposition bestComp = null;
 		long bestPrice = -1;
+		boolean bestWhitelisted = false;
 
 		for (ItemStack stack : items)
 		{
 			ItemComposition comp = itemManager.getItemComposition(stack.getId());
+			String itemName = comp.getName();
+
+			if (ItemFilter.matches(ignorelist, itemName))
+			{
+				continue;
+			}
+
 			long price = (ironManMode != null && ironManMode.isIronman())
 				? (long) comp.getHaPrice() * stack.getQuantity()
 				: (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
-			if (price > bestPrice)
+
+			boolean whitelisted = ItemFilter.matches(whitelist, itemName);
+
+			boolean better;
+			if (whitelisted != bestWhitelisted)
+			{
+				better = whitelisted;
+			}
+			else
+			{
+				better = price > bestPrice;
+			}
+
+			if (bestStack == null || better)
 			{
 				bestPrice = price;
 				bestStack = stack;
 				bestComp = comp;
+				bestWhitelisted = whitelisted;
 			}
 		}
 
-		if (bestPrice < config.minLootValue())
+		if (bestStack == null)
+		{
+			return;
+		}
+
+		if (!bestWhitelisted && bestPrice < config.minLootValue())
 		{
 			return;
 		}
