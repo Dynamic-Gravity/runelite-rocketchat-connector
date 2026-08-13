@@ -1,5 +1,9 @@
 # RuneLite Plugin Development — Agent Guidelines
 
+## Git Hooks
+
+- Run `./scripts/check-commit-message.sh --install` once after cloning. It installs a `commit-msg` hook that blocks conventional-commit typos (e.g. `fix (Scope):` with a space) which otherwise cause the CI release job to silently skip.
+
 ## Logging
 
 - Use `log.debug()` for developer/diagnostic logging.
