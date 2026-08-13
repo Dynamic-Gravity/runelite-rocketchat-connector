@@ -118,9 +118,38 @@ public interface RocketChatConnectorConfig extends Config
 	}
 
 	@ConfigSection(
+		name = "Item Filters",
+		description = "Override which item wins the Loot/Clue notification slot, regardless of value",
+		position = 4
+	)
+	String itemFilterSection = "itemfilter";
+
+	@ConfigItem(
+		keyName = "itemWhitelist",
+		name = "Item whitelist",
+		description = "Comma-separated item names that always win the notification slot and bypass the minimum loot value",
+		section = itemFilterSection
+	)
+	default String itemWhitelist()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "itemIgnorelist",
+		name = "Item ignorelist",
+		description = "Comma-separated item names that are never shown, even if they would otherwise be picked. Takes priority over the whitelist for the same item",
+		section = itemFilterSection
+	)
+	default String itemIgnorelist()
+	{
+		return "";
+	}
+
+	@ConfigSection(
 		name = "Clue Scrolls",
 		description = "Notifications when you complete a clue scroll",
-		position = 4
+		position = 5
 	)
 	String clueSection = "clue";
 
@@ -147,28 +176,28 @@ public interface RocketChatConnectorConfig extends Config
 	}
 
 	// Pet
-	@ConfigSection(name = "Pets", description = "Pet drop notifications", position = 5)
+	@ConfigSection(name = "Pets", description = "Pet drop notifications", position = 6)
 	String petSection = "pet";
 
 	@ConfigItem(keyName = "notifyOnPet", name = "Notify on pet", description = "Send a message when you receive a pet", section = petSection)
 	default boolean notifyOnPet() { return false; }
 
 	// Quest
-	@ConfigSection(name = "Quests", description = "Quest completion notifications", position = 6)
+	@ConfigSection(name = "Quests", description = "Quest completion notifications", position = 7)
 	String questSection = "quest";
 
 	@ConfigItem(keyName = "notifyOnQuest", name = "Notify on quest", description = "Send a message when you complete a quest", section = questSection)
 	default boolean notifyOnQuest() { return false; }
 
 	// Slayer
-	@ConfigSection(name = "Slayer", description = "Slayer task completion notifications", position = 7)
+	@ConfigSection(name = "Slayer", description = "Slayer task completion notifications", position = 8)
 	String slayerSection = "slayer";
 
 	@ConfigItem(keyName = "notifyOnSlayer", name = "Notify on slayer task", description = "Send a message when you complete a slayer task", section = slayerSection)
 	default boolean notifyOnSlayer() { return false; }
 
 	// Boss
-	@ConfigSection(name = "Boss Kills", description = "Boss kill count notifications", position = 8)
+	@ConfigSection(name = "Boss Kills", description = "Boss kill count notifications", position = 9)
 	String bossSection = "boss";
 
 	@ConfigItem(keyName = "notifyOnBoss", name = "Notify on boss kill", description = "Send a message on boss kill count milestones", section = bossSection)
@@ -181,14 +210,14 @@ public interface RocketChatConnectorConfig extends Config
 	default int bossKillCountInterval() { return 1; }
 
 	// Collection log
-	@ConfigSection(name = "Collection Log", description = "Collection log new-entry notifications", position = 9)
+	@ConfigSection(name = "Collection Log", description = "Collection log new-entry notifications", position = 10)
 	String collectionLogSection = "collectionlog";
 
 	@ConfigItem(keyName = "notifyOnCollectionLog", name = "Notify on collection log", description = "Send a message when a new item is added to your collection log", section = collectionLogSection)
 	default boolean notifyOnCollectionLog() { return false; }
 
 	// Combat achievements
-	@ConfigSection(name = "Combat Achievements", description = "Combat achievement notifications", position = 10)
+	@ConfigSection(name = "Combat Achievements", description = "Combat achievement notifications", position = 11)
 	String combatAchievementSection = "combatachievement";
 
 	@ConfigItem(keyName = "notifyOnCombatAchievement", name = "Notify on CA", description = "Send a message when you complete a combat achievement", section = combatAchievementSection)
@@ -198,7 +227,7 @@ public interface RocketChatConnectorConfig extends Config
 	default CombatAchievementTier minCombatAchievementTier() { return CombatAchievementTier.EASY; }
 
 	// Achievement diaries
-	@ConfigSection(name = "Achievement Diaries", description = "Diary completion notifications", position = 11)
+	@ConfigSection(name = "Achievement Diaries", description = "Diary completion notifications", position = 12)
 	String diarySection = "diary";
 
 	@ConfigItem(keyName = "notifyOnDiary", name = "Notify on diary", description = "Send a message when you complete an achievement diary", section = diarySection)
@@ -208,7 +237,7 @@ public interface RocketChatConnectorConfig extends Config
 	default DiaryTier minDiaryTier() { return DiaryTier.EASY; }
 
 	// Custom Pattern
-	@ConfigSection(name = "Custom Pattern", description = "Notify on custom chat messages", position = 12)
+	@ConfigSection(name = "Custom Pattern", description = "Notify on custom chat messages", position = 13)
 	String chatPatternSection = "chatpattern";
 
 	@ConfigItem(keyName = "notifyOnChatPattern", name = "Notify on pattern match",
@@ -222,7 +251,7 @@ public interface RocketChatConnectorConfig extends Config
 	default String chatPattern() { return ""; }
 
 	// Grand Exchange
-	@ConfigSection(name = "Grand Exchange", description = "Grand Exchange trade notifications", position = 13)
+	@ConfigSection(name = "Grand Exchange", description = "Grand Exchange trade notifications", position = 14)
 	String grandExchangeSection = "grandexchange";
 
 	@ConfigItem(keyName = "notifyOnGrandExchange", name = "Notify on GE trade",
@@ -236,7 +265,7 @@ public interface RocketChatConnectorConfig extends Config
 	default int minGrandExchangeValue() { return 0; }
 
 	// Iron Man
-	@ConfigSection(name = "Iron Man", description = "Iron Man account type settings", position = 14)
+	@ConfigSection(name = "Iron Man", description = "Iron Man account type settings", position = 15)
 	String ironManSection = "ironman";
 
 	@ConfigItem(keyName = "ironManMode", name = "Account type",

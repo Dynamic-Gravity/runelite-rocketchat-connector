@@ -16,8 +16,8 @@ A RuneLite plugin that sends game event notifications to a self-hosted [Rocket.C
 |---|---|---|
 | Death | Local player dies | Toggle |
 | Level up | Skill level increases | Toggle, minimum level (1–99) |
-| Loot | Loot received from NPC/pickpocket | Toggle, minimum GE value (gp) |
-| Clue scrolls | Clue scroll reward received | Toggle, minimum tier (Beginner–Master) |
+| Loot | Loot received from NPC/pickpocket | Toggle, minimum GE value (gp), wiki-linked item card with icon, optional drop rarity, item whitelist/ignorelist |
+| Clue scrolls | Clue scroll reward received | Toggle, minimum tier (Beginner–Master), wiki-linked item card with icon, optional drop rarity, item whitelist/ignorelist |
 | Pet drop | "funny feeling" or "weird sneaking" chat message | Toggle |
 | Quest complete | Quest completion chat message | Toggle |
 | Slayer task | Slayer task completion chat message | Toggle |
@@ -29,6 +29,16 @@ A RuneLite plugin that sends game event notifications to a self-hosted [Rocket.C
 | Custom chat pattern | Any chat message matching a user-defined regex | Toggle, regex pattern |
 
 **Not implemented (planned):** Player kills, P2P trades, Group Ironman bank transactions, Leagues events, Barbarian Assault gambles, quest speedruns.
+
+## Item Filters
+
+The Loot and Clue Scroll notifiers pick one item to show per drop — normally the highest-value item. Two config fields let you override that:
+
+- **Item whitelist** — comma-separated item names (e.g. `Zulrah's scales, Coins`) that always win the notification slot, regardless of price, and bypass the minimum loot value (Loot only — Clue Scroll notifications have no minimum value threshold to bypass).
+- **Item ignorelist** — comma-separated item names that are never shown, even if they'd otherwise be the natural pick. If a drop's other items still qualify, one of those is shown instead; if nothing survives, no notification fires for that event.
+- **If an item is on both lists, the ignorelist wins** — it's filtered out before whitelist status is ever checked, so it can never be shown.
+
+Matching is exact and case-insensitive — item names must match their in-game name exactly (e.g. `Abyssal whip`, not `whip`).
 
 ## Building
 
