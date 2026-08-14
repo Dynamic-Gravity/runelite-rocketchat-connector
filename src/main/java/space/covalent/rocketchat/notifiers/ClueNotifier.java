@@ -1,24 +1,42 @@
 package space.covalent.rocketchat.notifiers;
 
+import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import javax.imageio.ImageIO;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
+import net.runelite.client.ui.DrawManager;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import space.covalent.rocketchat.ClueTier;
 import space.covalent.rocketchat.IronManMode;
 import space.covalent.rocketchat.ItemFilter;
 import space.covalent.rocketchat.OsrsWiki;
 import space.covalent.rocketchat.RarityLookupService;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
+import space.covalent.rocketchat.RocketChatFileUploadClient;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
 
+@Slf4j
 @Singleton
 public class ClueNotifier
 {
@@ -33,6 +51,87 @@ public class ClueNotifier
 
 	@Inject
 	RarityLookupService rarityLookupService;
+
+	@Inject
+	Client client;
+
+	@Inject
+	DrawManager drawManager;
+
+	@Inject
+	OkHttpClient okHttpClient;
+
+	@Inject
+	RocketChatFileUploadClient fileUploadClient;
+
+	private static final int REWARD_SCREEN_GROUP = InterfaceID.TrailRewardscreen.UNIVERSE >>> 16;
+
+	private volatile CompletableFuture<byte[]> pendingScreenshot;
+
+	@Subscribe
+	public void onWidgetLoaded(WidgetLoaded event)
+	{
+		if (!config.clueScreenshotEnabled())
+		{
+			return;
+		}
+
+		if (event.getGroupId() != REWARD_SCREEN_GROUP)
+		{
+			return;
+		}
+
+		CompletableFuture<byte[]> future = new CompletableFuture<>();
+		future.orTimeout(5, TimeUnit.SECONDS);
+		pendingScreenshot = future;
+
+		drawManager.requestNextFrameListener(image -> captureAndCrop(image, future));
+	}
+
+	private void captureAndCrop(Image image, CompletableFuture<byte[]> future)
+	{
+		Widget rewardWidget = client.getWidget(InterfaceID.TrailRewardscreen.UNIVERSE);
+		if (rewardWidget == null)
+		{
+			future.completeExceptionally(new IllegalStateException("Reward widget not present"));
+			return;
+		}
+
+		Rectangle bounds = rewardWidget.getBounds();
+		BufferedImage cropped;
+		try
+		{
+			BufferedImage frame = (BufferedImage) image;
+			double scaleX = (double) frame.getWidth() / client.getCanvasWidth();
+			double scaleY = (double) frame.getHeight() / client.getCanvasHeight();
+			int x = (int) (bounds.x * scaleX);
+			int y = (int) (bounds.y * scaleY);
+			int width = (int) (bounds.width * scaleX);
+			int height = (int) (bounds.height * scaleY);
+			cropped = frame.getSubimage(x, y, width, height);
+		}
+		catch (RuntimeException e)
+		{
+			future.completeExceptionally(e);
+			return;
+		}
+
+		okHttpClient.dispatcher().executorService().execute(() -> encodeToPng(cropped, future));
+	}
+
+	private void encodeToPng(BufferedImage image, CompletableFuture<byte[]> future)
+	{
+		try
+		{
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			ImageIO.write(image, "png", out);
+			future.complete(out.toByteArray());
+		}
+		catch (IOException e)
+		{
+			future.completeExceptionally(e);
+		}
+	}
 
 	@Subscribe
 	public void onLootReceived(LootReceived event)
@@ -111,6 +210,16 @@ public class ClueNotifier
 		String tierName = tier.name().charAt(0) + tier.name().substring(1).toLowerCase();
 		String wikiSource = "Reward casket (" + tier.name().toLowerCase() + ")";
 		sendCard(tierName, wikiSource, bestStack, bestComp, bestPrice);
+
+		if (config.clueScreenshotEnabled())
+		{
+			CompletableFuture<byte[]> screenshot = pendingScreenshot;
+			pendingScreenshot = null;
+			if (screenshot != null)
+			{
+				screenshot.whenComplete(this::handleScreenshot);
+			}
+		}
 	}
 
 	private void sendCard(String tierName, String wikiSource, ItemStack stack, ItemComposition comp, long price)
@@ -183,5 +292,61 @@ public class ClueNotifier
 			return rarity.getRaw();
 		}
 		return rarity.getRaw() + " (" + percentText + "%)";
+	}
+
+	private void handleScreenshot(byte[] bytes, Throwable captureError)
+	{
+		if (!hasUploadConfig())
+		{
+			log.debug("Clue screenshot enabled but Rocket.Chat upload credentials are incomplete");
+			return;
+		}
+
+		String origin = serverOrigin(config.webhookUrl());
+		if (origin == null)
+		{
+			log.debug("Could not determine Rocket.Chat server origin from webhook URL");
+			return;
+		}
+
+		if (captureError != null)
+		{
+			sendSneakingSuspicion();
+			return;
+		}
+
+		fileUploadClient.upload(origin, config.rocketChatRoomId(), config.rocketChatUserId(), config.rocketChatAuthToken(), bytes)
+			.whenComplete((v, uploadError) ->
+			{
+				if (uploadError != null)
+				{
+					sendSneakingSuspicion();
+				}
+			});
+	}
+
+	private boolean hasUploadConfig()
+	{
+		return !config.rocketChatRoomId().isEmpty()
+			&& !config.rocketChatUserId().isEmpty()
+			&& !config.rocketChatAuthToken().isEmpty();
+	}
+
+	private void sendSneakingSuspicion()
+	{
+		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
+			.text("🕵️ You have a sneaking suspicion this reward should've come with a screenshot...")
+			.build());
+	}
+
+	private static String serverOrigin(String webhookUrl)
+	{
+		HttpUrl url = HttpUrl.parse(webhookUrl);
+		if (url == null)
+		{
+			return null;
+		}
+		boolean defaultPort = url.port() == HttpUrl.defaultPort(url.scheme());
+		return url.scheme() + "://" + url.host() + (defaultPort ? "" : ":" + url.port());
 	}
 }

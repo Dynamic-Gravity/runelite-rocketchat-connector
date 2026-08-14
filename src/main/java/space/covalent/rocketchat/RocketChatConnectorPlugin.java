@@ -38,7 +38,8 @@ public class RocketChatConnectorPlugin extends Plugin
 		"notifyOnClue", "minClueTier", "notifyOnPet", "notifyOnQuest", "notifyOnSlayer", "notifyOnBoss",
 		"bossPersonalBestOnly", "bossKillCountInterval", "notifyOnCollectionLog", "notifyOnCombatAchievement",
 		"minCombatAchievementTier", "notifyOnDiary", "minDiaryTier", "notifyOnChatPattern", "chatPattern",
-		"notifyOnGrandExchange", "minGrandExchangeValue", "ironManMode"
+		"notifyOnGrandExchange", "minGrandExchangeValue", "ironManMode",
+		"clueScreenshotEnabled", "rocketChatUserId", "rocketChatAuthToken", "rocketChatRoomId"
 	};
 
 	@Inject
