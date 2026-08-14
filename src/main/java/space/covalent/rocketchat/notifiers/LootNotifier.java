@@ -143,7 +143,7 @@ public class LootNotifier
 		if (OsrsWiki.isLinkable(itemName))
 		{
 			attachment.titleLink(OsrsWiki.pageUrl(itemName));
-			attachment.thumbUrl(OsrsWiki.iconUrl(itemName));
+			attachment.imageUrl(OsrsWiki.iconUrl(itemName));
 		}
 
 		return RocketChatPayload.builder()

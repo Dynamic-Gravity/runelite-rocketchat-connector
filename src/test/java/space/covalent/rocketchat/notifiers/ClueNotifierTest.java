@@ -158,7 +158,7 @@ public class ClueNotifierTest
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
 		assertEquals("https://oldschool.runescape.wiki/w/Abyssal_whip", attachment.getTitleLink());
-		assertEquals("https://oldschool.runescape.wiki/w/Special:FilePath/Abyssal_whip.png", attachment.getThumbUrl());
+		assertEquals("https://oldschool.runescape.wiki/w/Special:FilePath/Abyssal_whip.png", attachment.getImageUrl());
 	}
 
 	@Test
@@ -256,7 +256,7 @@ public class ClueNotifierTest
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
 		assertNull(attachment.getTitleLink());
-		assertNull(attachment.getThumbUrl());
+		assertNull(attachment.getImageUrl());
 	}
 
 	@Test
