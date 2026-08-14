@@ -30,11 +30,11 @@ drawManager.requestNextFrameListener(image -> {
     }
     Rectangle bounds = rewardWidget.getBounds();
     BufferedImage cropped = ((BufferedImage) image).getSubimage(bounds.x, bounds.y, bounds.width, bounds.height);
-    okHttpClient.dispatcher().executorService().execute(() -> encodeAndUpload(cropped));
+    okHttpClient.dispatcher().executorService().execute(() -> encodeToPng(cropped, future));
 });
 ```
 
-- `requestNextFrameListener` callback fires on the **client thread**. Only the cheap part happens there: reading widget bounds and taking a subimage view. PNG encoding and the network call are hopped onto the existing OkHttp thread pool (`okHttpClient.dispatcher().executorService()`) — no new executor to create or shut down, consistent with AGENTS.md's "never block the client thread" and "use the OkHttp thread pool" rules.
+- `requestNextFrameListener` callback fires on the **client thread**. Only the cheap part happens there: reading widget bounds and taking a subimage view. PNG encoding is hopped onto the existing OkHttp thread pool (`okHttpClient.dispatcher().executorService()`) — no new executor to create or shut down, consistent with AGENTS.md's "never block the client thread" and "use the OkHttp thread pool" rules. `encodeToPng` only encodes and completes `future` with the resulting bytes (or exceptionally on encode failure) — it does **not** upload. Uploading happens later, from `onLootReceived` (see Wiring below), once the item to notify about is known.
 - The pending capture is stored as `volatile CompletableFuture<byte[]> pendingScreenshot`, completed with the encoded PNG bytes (or completed exceptionally on any failure). A fresh clue overwrites any prior in-flight future — only the latest clue's screenshot matters.
 - The future gets `.orTimeout(5, TimeUnit.SECONDS)` applied at creation, so a frame that never renders (client minimized, window occluded) doesn't hang the flow indefinitely.
 
