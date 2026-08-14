@@ -175,6 +175,52 @@ public interface RocketChatConnectorConfig extends Config
 		return ClueTier.EASY;
 	}
 
+	@ConfigItem(
+		keyName = "clueScreenshotEnabled",
+		name = "Send reward screenshot",
+		description = "Upload a screenshot of the clue reward screen to Rocket.Chat as a separate message",
+		section = clueSection,
+		warning = "This feature submits your IP address to a 3rd-party server not controlled or verified by RuneLite developers"
+	)
+	default boolean clueScreenshotEnabled()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "rocketChatUserId",
+		name = "Rocket.Chat user ID",
+		description = "Personal access token user ID, used to upload the clue reward screenshot",
+		section = clueSection
+	)
+	default String rocketChatUserId()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "rocketChatAuthToken",
+		name = "Rocket.Chat auth token",
+		description = "Personal access token auth token, used to upload the clue reward screenshot",
+		section = clueSection,
+		secret = true
+	)
+	default String rocketChatAuthToken()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "rocketChatRoomId",
+		name = "Rocket.Chat room ID",
+		description = "Target room/channel ID to upload the clue reward screenshot into",
+		section = clueSection
+	)
+	default String rocketChatRoomId()
+	{
+		return "";
+	}
+
 	// Pet
 	@ConfigSection(name = "Pets", description = "Pet drop notifications", position = 6)
 	String petSection = "pet";
