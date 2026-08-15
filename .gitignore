@@ -9,3 +9,7 @@ bin
 nbactions.xml
 nb-configuration.xml
 nbproject/
+tools/**/*.png
+tools/item-emojis/__pycache__/
+tools/item-emojis/icon-cache/
+tools/item-emojis/item-emoji-map.json

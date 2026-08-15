@@ -7,6 +7,7 @@ import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import space.covalent.rocketchat.IronManMode;
@@ -40,7 +41,11 @@ public class GrandExchangeNotifier
 			return;
 		}
 
-		GrandExchangeOffer offer = event.getOffer();
+		handleOffer(event.getOffer());
+	}
+
+	private void handleOffer(GrandExchangeOffer offer)
+	{
 		GrandExchangeOfferState state = offer.getState();
 
 		if (state != GrandExchangeOfferState.BOUGHT && state != GrandExchangeOfferState.SOLD)
@@ -72,6 +77,60 @@ public class GrandExchangeNotifier
 					.build()
 			))
 			.build());
+	}
+
+	/**
+	 * Fires a synthetic completed GE trade through the real payload-building path, for the
+	 * developer-mode debug panel. Bypasses the ironman-account suppression (real GE
+	 * notifications are suppressed for ironmen, since they can't use the GE) so the message can
+	 * still be previewed on an ironman-configured account. Still respects notifyOnGrandExchange.
+	 */
+	public void sendTestNotification()
+	{
+		if (!config.notifyOnGrandExchange())
+		{
+			return;
+		}
+
+		GrandExchangeOffer offer = new GrandExchangeOffer()
+		{
+			@Override
+			public int getQuantitySold()
+			{
+				return 10;
+			}
+
+			@Override
+			public int getItemId()
+			{
+				return ItemID.ABYSSAL_WHIP;
+			}
+
+			@Override
+			public int getTotalQuantity()
+			{
+				return 10;
+			}
+
+			@Override
+			public int getPrice()
+			{
+				return 2_000_000;
+			}
+
+			@Override
+			public int getSpent()
+			{
+				return 20_000_000;
+			}
+
+			@Override
+			public GrandExchangeOfferState getState()
+			{
+				return GrandExchangeOfferState.BOUGHT;
+			}
+		};
+		handleOffer(offer);
 	}
 
 	private static String formatGp(long value)

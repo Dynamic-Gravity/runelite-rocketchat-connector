@@ -31,4 +31,20 @@ public class IronManModeTest
         assertFalse(IronManMode.GROUP_IRONMAN.isHardcore());
         assertTrue(IronManMode.HARDCORE_GROUP_IRONMAN.isHardcore());
     }
+
+    @Test
+    public void testNoneHasNoHelm()
+    {
+        assertNull(IronManMode.NONE.helmItemName());
+    }
+
+    @Test
+    public void testEachAccountTypeHasItsOwnHelm()
+    {
+        assertEquals("Ironman helm", IronManMode.IRONMAN.helmItemName());
+        assertEquals("Ultimate ironman helm", IronManMode.ULTIMATE_IRONMAN.helmItemName());
+        assertEquals("Hardcore ironman helm", IronManMode.HARDCORE_IRONMAN.helmItemName());
+        assertEquals("Group ironman helm", IronManMode.GROUP_IRONMAN.helmItemName());
+        assertEquals("Hardcore group ironman helm", IronManMode.HARDCORE_GROUP_IRONMAN.helmItemName());
+    }
 }

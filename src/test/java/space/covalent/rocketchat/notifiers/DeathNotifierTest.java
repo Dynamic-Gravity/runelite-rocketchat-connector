@@ -122,4 +122,52 @@ public class DeathNotifierTest
 		assertFalse(att.getTitle().contains("HARDCORE"));
 		assertEquals("#FF0000", att.getColor());
 	}
+
+	@Test
+	public void testSendTestNotificationFiresForLocalPlayer()
+	{
+		when(config.notifyOnDeath()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player localPlayer = mock(Player.class);
+		when(client.getLocalPlayer()).thenReturn(localPlayer);
+		when(localPlayer.getName()).thenReturn("Zezima");
+
+		notifier.sendTestNotification();
+
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testSendTestNotificationNoOpsWithoutLocalPlayer()
+	{
+		when(client.getLocalPlayer()).thenReturn(null);
+
+		notifier.sendTestNotification();
+
+		verify(webhookClient, never()).send(any(), any());
+	}
+
+	@Test
+	public void testTextIncludesHelmShortcodeWhenEmojiIconsEnabled()
+	{
+		when(config.notifyOnDeath()).thenReturn(true);
+		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+		when(config.useEmojiIcons()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player localPlayer = mock(Player.class);
+		when(client.getLocalPlayer()).thenReturn(localPlayer);
+		when(localPlayer.getName()).thenReturn("Zezima");
+		when(localPlayer.getCombatLevel()).thenReturn(100);
+
+		ActorDeath event = new ActorDeath(localPlayer);
+		notifier.onActorDeath(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment att = captor.getValue().getAttachments().get(0);
+		// The helm shortcode goes in text, not title - Rocket.Chat doesn't render emoji
+		// shortcodes in the attachment title field.
+		assertTrue(att.getText().contains(":osrs_ironman_helm: Zezima"));
+		assertFalse(att.getTitle().contains("osrs_ironman_helm"));
+	}
 }

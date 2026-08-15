@@ -6,10 +6,12 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
 import space.covalent.rocketchat.CombatAchievementTier;
+import space.covalent.rocketchat.PlayerNameFormatter;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -20,6 +22,7 @@ public class CombatAchievementNotifier
 	private static final Pattern CA_COMPLETE = Pattern.compile(
 		"Congratulations, you've completed (?:a|an) (Easy|Medium|Hard|Elite|Master|Grandmaster) combat achievement: (.+)\\.");
 
+	@Inject Client client;
 	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
@@ -42,14 +45,30 @@ public class CombatAchievementNotifier
 
 		if (tier.getRank() < config.minCombatAchievementTier().getRank()) return;
 
+		String name = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
+			? client.getLocalPlayer().getName()
+			: "Unknown";
+		name = PlayerNameFormatter.format(name, config.ironManMode(), config.useEmojiIcons());
+
 		webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
 				RocketChatPayload.Attachment.builder()
 					.title("🏅 Combat Achievement: " + taskName)
-					.text("Tier: **" + tierName + "**")
+					.text(name + " - Tier: **" + tierName + "**")
 					.color("#E67E22")
 					.build()
 			))
 			.build());
+	}
+
+	/**
+	 * Fires a synthetic combat achievement message through the real onChatMessage path, for the
+	 * developer-mode debug panel. Uses the highest tier so it clears minCombatAchievementTier
+	 * regardless of your configured minimum.
+	 */
+	public void sendTestNotification()
+	{
+		onChatMessage(new ChatMessage(null, ChatMessageType.GAMEMESSAGE, "",
+			"Congratulations, you've completed a Grandmaster combat achievement: Zulrah expert.", "", 0));
 	}
 }

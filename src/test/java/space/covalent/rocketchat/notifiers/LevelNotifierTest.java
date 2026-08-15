@@ -88,4 +88,43 @@ public class LevelNotifierTest
 
 		verify(webhookClient, never()).send(any(), any());
 	}
+
+	@Test
+	public void testSendTestNotificationFiresExactlyOnce()
+	{
+		when(config.notifyOnLevel()).thenReturn(true);
+		when(config.minLevel()).thenReturn(1);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+		when(client.getRealSkillLevel(Skill.ATTACK)).thenReturn(70);
+
+		notifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient, times(1)).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getTitle().contains("71"));
+	}
+
+	@Test
+	public void testSendTestNotificationFiresOnceEvenWhenRealGameplayAlreadySeededCurrentLevel()
+	{
+		when(config.notifyOnLevel()).thenReturn(true);
+		when(config.minLevel()).thenReturn(1);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+		when(client.getRealSkillLevel(Skill.ATTACK)).thenReturn(70);
+
+		// Real gameplay (e.g. the client's login hiscore sync) already seeded the player's actual
+		// current level before the button is ever clicked - a hardcoded seed (like the old 98)
+		// would fire immediately here too, then fire again on the real+1 call: a double message.
+		notifier.onStatChanged(new StatChanged(Skill.ATTACK, 0, 70, 0));
+
+		notifier.sendTestNotification();
+
+		verify(webhookClient, times(1)).send(any(), any());
+	}
 }

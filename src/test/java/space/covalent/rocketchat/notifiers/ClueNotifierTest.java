@@ -1,6 +1,7 @@
 package space.covalent.rocketchat.notifiers;
 
 import net.runelite.api.ItemComposition;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
@@ -37,6 +38,7 @@ import org.junit.Before;
 import space.covalent.rocketchat.RocketChatFileUploadClient;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -56,6 +58,18 @@ public class ClueNotifierTest
 
 	@InjectMocks ClueNotifier notifier;
 
+	private static RocketChatPayload.Field field(RocketChatPayload.Attachment attachment, String title)
+	{
+		for (RocketChatPayload.Field f : attachment.getFields())
+		{
+			if (f.getTitle().equals(title))
+			{
+				return f;
+			}
+		}
+		return null;
+	}
+
 	@Before
 	public void setUp()
 	{
@@ -67,11 +81,13 @@ public class ClueNotifierTest
 	}
 
 	@Test
-	public void testUsesHighAlchValueInIronmanMode()
+	public void testFieldsAlwaysShowBothGeAndHaPricesRegardlessOfAccountType()
 	{
+		// Ironman mode used to switch to HA-only pricing. That branching is gone - GE and HA are
+		// both always computed and shown now, for every account type.
 		when(config.notifyOnClue()).thenReturn(true);
 		when(config.minClueTier()).thenReturn(ClueTier.EASY);
-		when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+		lenient().when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
 		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
 
 		int itemId = 4151;
@@ -79,13 +95,17 @@ public class ClueNotifierTest
 		when(comp.getName()).thenReturn("Abyssal whip");
 		when(comp.getHaPrice()).thenReturn(120000);
 		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000000);
 
 		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
 			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
 		notifier.onLootReceived(event);
 
-		verify(webhookClient).send(any(), any());
-		verify(itemManager, never()).getItemPrice(itemId);
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("`2.0M gp`", field(attachment, "GE Value").getValue());
+		assertEquals("`120.0K gp`", field(attachment, "HA Value").getValue());
 	}
 
 	@Test
@@ -134,7 +154,7 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertEquals("1x Abyssal whip", attachment.getTitle());
+		assertTrue(attachment.getText().contains("Abyssal whip"));
 	}
 
 	@Test
@@ -157,13 +177,38 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertEquals("https://oldschool.runescape.wiki/w/Abyssal_whip", attachment.getTitleLink());
+		assertTrue(attachment.getText().contains("[Abyssal whip](https://oldschool.runescape.wiki/w/Abyssal_whip)"));
 		assertEquals("https://oldschool.runescape.wiki/w/Special:FilePath/Abyssal_whip.png", attachment.getImageUrl());
 	}
 
 	@Test
+	public void testCardUsesEmojiShortcodeWhenEnabled()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.useEmojiIcons()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		int itemId = 4151;
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(itemId)).thenReturn(comp);
+		when(itemManager.getItemPrice(itemId)).thenReturn(2000000);
+
+		LootReceived event = new LootReceived("Clue Scroll (Easy)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(itemId, 1)), 1, null);
+		notifier.onLootReceived(event);
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertTrue(attachment.getText().contains(":osrs_abyssal_whip: Abyssal whip"));
+		assertNull(attachment.getImageUrl());
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
-	public void testRarityLineAppendedWhenEnabledAndFound()
+	public void testRarityFieldAddedWhenEnabledAndFound()
 	{
 		when(config.notifyOnClue()).thenReturn(true);
 		when(config.minClueTier()).thenReturn(ClueTier.EASY);
@@ -189,8 +234,8 @@ public class ClueNotifierTest
 
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
-		String text = captor.getValue().getAttachments().get(0).getText();
-		assertTrue(text.contains("12/128 (9.38%)"));
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertEquals("`# 12/128 (9.38%)`", field(attachment, "Rarity").getValue());
 	}
 
 	@Test
@@ -255,12 +300,12 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertNull(attachment.getTitleLink());
+		assertFalse(attachment.getText().contains("]("));
 		assertNull(attachment.getImageUrl());
 	}
 
 	@Test
-	public void testZeroPriceOmitsValueLine()
+	public void testZeroPriceOmitsValueFields()
 	{
 		when(config.notifyOnClue()).thenReturn(true);
 		when(config.minClueTier()).thenReturn(ClueTier.EASY);
@@ -278,13 +323,13 @@ public class ClueNotifierTest
 
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
-		String text = captor.getValue().getAttachments().get(0).getText();
-		assertEquals("", text);
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertTrue(attachment.getFields().isEmpty());
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testRarityLookupNoMatchStillSendsWithoutRarityLine()
+	public void testRarityLookupNoMatchOmitsRarityField()
 	{
 		when(config.notifyOnClue()).thenReturn(true);
 		when(config.minClueTier()).thenReturn(ClueTier.EASY);
@@ -310,8 +355,8 @@ public class ClueNotifierTest
 
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
-		String text = captor.getValue().getAttachments().get(0).getText();
-		assertEquals("2.0M gp", text);
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		assertNull(field(attachment, "Rarity"));
 	}
 
 	@Test
@@ -341,7 +386,7 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertEquals("1x Rune arrow", attachment.getTitle());
+		assertTrue(attachment.getText().contains("Rune arrow"));
 	}
 
 	@Test
@@ -371,7 +416,7 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertEquals("1x Bones", attachment.getTitle());
+		assertTrue(attachment.getText().contains("Bones"));
 		verify(itemManager, never()).getItemPrice(expensiveId);
 	}
 
@@ -422,7 +467,7 @@ public class ClueNotifierTest
 		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
 		verify(webhookClient).send(any(), captor.capture());
 		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
-		assertEquals("1x Abyssal whip", attachment.getTitle());
+		assertTrue(attachment.getText().contains("Abyssal whip"));
 	}
 
 	private void loadRewardScreen(Rectangle widgetBounds)
@@ -718,5 +763,22 @@ public class ClueNotifierTest
 		verify(fileUploadClient, never()).upload(any(), any(), any(), any(), any());
 		// exactly the one item-card message - no whimsical fallback despite the failed capture
 		verify(webhookClient, timeout(500).times(1)).send(any(), any());
+	}
+
+	@Test
+	public void testSendTestNotificationFires()
+	{
+		when(config.notifyOnClue()).thenReturn(true);
+		when(config.minClueTier()).thenReturn(ClueTier.EASY);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(ItemID.ABYSSAL_WHIP)).thenReturn(comp);
+		when(itemManager.getItemPrice(ItemID.ABYSSAL_WHIP)).thenReturn(2000000);
+
+		notifier.sendTestNotification();
+
+		verify(webhookClient).send(any(), any());
 	}
 }

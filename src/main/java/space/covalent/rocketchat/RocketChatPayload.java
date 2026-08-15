@@ -16,6 +16,12 @@ public class RocketChatPayload
 	@Builder
 	public static class Attachment
 	{
+		@SerializedName("author_name")
+		String authorName;
+		@SerializedName("author_icon")
+		String authorIcon;
+		@SerializedName("author_link")
+		String authorLink;
 		String title;
 		@SerializedName("title_link")
 		String titleLink;

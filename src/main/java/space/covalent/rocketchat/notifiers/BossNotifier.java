@@ -6,9 +6,11 @@ import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.util.Text;
 import net.runelite.client.eventbus.Subscribe;
+import space.covalent.rocketchat.PlayerNameFormatter;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -21,6 +23,7 @@ public class BossNotifier
 	private static final Pattern FIGHT_DURATION = Pattern.compile(
 		"Fight duration: ([\\d:]+)\\.(?:.* Personal best: ([\\d:]+))?");
 
+	@Inject Client client;
 	@Inject RocketChatConnectorConfig config;
 	@Inject WebhookClient webhookClient;
 
@@ -31,6 +34,12 @@ public class BossNotifier
 		if (event.getType() != ChatMessageType.GAMEMESSAGE) return;
 
 		String msg = Text.removeTags(event.getMessage());
+		String name = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
+			? client.getLocalPlayer().getName()
+			: "Unknown";
+		// Emoji shortcodes never render in the attachment title field (same Rocket.Chat
+		// limitation as item icons), so the "name | ..." line lives in text, not title.
+		name = PlayerNameFormatter.format(name, config.ironManMode(), config.useEmojiIcons());
 
 		Matcher kc = KILL_COUNT.matcher(msg);
 		if (kc.find())
@@ -49,7 +58,8 @@ public class BossNotifier
 			webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 				.attachments(Collections.singletonList(
 					RocketChatPayload.Attachment.builder()
-						.title("☠️ " + boss + " kill count: " + count)
+						.title(boss + " kill count: " + count)
+						.text(name)
 						.color("#C0392B")
 						.build()
 				))
@@ -67,17 +77,28 @@ public class BossNotifier
 			if (config.bossPersonalBestOnly() && !isNewPb) return;
 
 			String title = isNewPb
-				? "⭐ New personal best: " + duration
-				: "⏱️ Fight duration: " + duration;
+				? "New personal best: " + duration
+				: "Fight duration: " + duration;
 
 			webhookClient.send(config.webhookUrl(), RocketChatPayload.builder()
 				.attachments(Collections.singletonList(
 					RocketChatPayload.Attachment.builder()
 						.title(title)
+						.text(name)
 						.color(isNewPb ? "#F1C40F" : "#95A5A6")
 						.build()
 				))
 				.build());
 		}
+	}
+
+	/**
+	 * Fires a synthetic boss kill-count message through the real onChatMessage path, for the
+	 * developer-mode debug panel. Still subject to bossPersonalBestOnly / bossKillCountInterval.
+	 */
+	public void sendTestNotification()
+	{
+		onChatMessage(new ChatMessage(null, ChatMessageType.GAMEMESSAGE, "",
+			"Your Zulrah kill count is: 42.", "", 0));
 	}
 }

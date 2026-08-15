@@ -6,6 +6,7 @@ import java.util.regex.PatternSyntaxException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
@@ -61,5 +62,16 @@ public class ChatPatternNotifier
 					.build()
 			))
 			.build());
+	}
+
+	/**
+	 * Fires a synthetic chat message through the real onChatMessage path, for the developer-mode
+	 * debug panel. Only produces a notification if your configured pattern matches this test
+	 * string - it can't guess your regex, so this mainly proves the trigger wiring works.
+	 */
+	public void sendTestNotification()
+	{
+		onChatMessage(new ChatMessage(null, ChatMessageType.GAMEMESSAGE, "",
+			"Test message for Rocket.Chat Connector pattern matching.", "", 0));
 	}
 }

@@ -4,6 +4,7 @@ import net.runelite.api.GrandExchangeOffer;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -172,5 +173,50 @@ public class GrandExchangeNotifierTest
 		notifier.onGrandExchangeOfferChanged(event);
 
 		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testSendTestNotificationFires()
+	{
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.minGrandExchangeValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(ItemID.ABYSSAL_WHIP)).thenReturn(comp);
+
+		notifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getTitle().contains("Abyssal whip"));
+	}
+
+	@Test
+	public void testSendTestNotificationFiresEvenWhenIronman()
+	{
+		// sendTestNotification bypasses the ironman-account suppression that
+		// onGrandExchangeOfferChanged applies, so this must still fire even set to IRONMAN.
+		// lenient(): the stub is intentionally not required to be consumed - that's the point.
+		lenient().when(config.ironManMode()).thenReturn(IronManMode.IRONMAN);
+		when(config.notifyOnGrandExchange()).thenReturn(true);
+		when(config.minGrandExchangeValue()).thenReturn(0);
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		ItemComposition comp = mock(ItemComposition.class);
+		when(comp.getName()).thenReturn("Abyssal whip");
+		when(itemManager.getItemComposition(ItemID.ABYSSAL_WHIP)).thenReturn(comp);
+
+		notifier.sendTestNotification();
+
+		verify(webhookClient).send(any(), any());
+	}
+
+	@Test
+	public void testSendTestNotificationSkipsWhenDisabled()
+	{
+		notifier.sendTestNotification();
+		verify(webhookClient, never()).send(any(), any());
 	}
 }

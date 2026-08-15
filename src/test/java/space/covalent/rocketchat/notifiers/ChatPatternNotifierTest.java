@@ -83,4 +83,15 @@ public class ChatPatternNotifierTest
 		notifier.onChatMessage(msg("You found a diamond."));
 		verify(webhookClient, times(1)).send(any(), any());
 	}
+
+	@Test
+	public void testSendTestNotificationFiresWhenPatternMatchesSampleText()
+	{
+		when(config.notifyOnChatPattern()).thenReturn(true);
+		when(config.chatPattern()).thenReturn("Rocket.Chat Connector");
+		when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+
+		notifier.sendTestNotification();
+		verify(webhookClient).send(any(), any());
+	}
 }

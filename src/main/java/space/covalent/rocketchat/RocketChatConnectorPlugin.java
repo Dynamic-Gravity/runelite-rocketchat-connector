@@ -2,11 +2,16 @@ package space.covalent.rocketchat;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
+import javax.inject.Named;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import space.covalent.rocketchat.debug.DebugNotificationPanel;
 import space.covalent.rocketchat.notifiers.BossNotifier;
 import space.covalent.rocketchat.notifiers.ChatPatternNotifier;
 import space.covalent.rocketchat.notifiers.ClueNotifier;
@@ -93,6 +98,18 @@ public class RocketChatConnectorPlugin extends Plugin
 	@Inject
 	private HardcoreStatusNotifier hardcoreStatusNotifier;
 
+	@Inject
+	private ClientToolbar clientToolbar;
+
+	@Inject
+	private ClientThread clientThread;
+
+	@Inject
+	@Named("developerMode")
+	private boolean developerMode;
+
+	private NavigationButton debugNavButton;
+
 	@Override
 	protected void startUp()
 	{
@@ -112,6 +129,24 @@ public class RocketChatConnectorPlugin extends Plugin
 		eventBus.register(chatPatternNotifier);
 		eventBus.register(grandExchangeNotifier);
 		eventBus.register(hardcoreStatusNotifier);
+
+		if (developerMode)
+		{
+			DebugNotificationPanel debugPanel = new DebugNotificationPanel(
+				clientThread,
+				deathNotifier, levelNotifier, lootNotifier, clueNotifier, petNotifier,
+				questNotifier, slayerNotifier, bossNotifier, collectionLogNotifier,
+				combatAchievementNotifier, diaryNotifier, chatPatternNotifier, grandExchangeNotifier);
+
+			debugNavButton = NavigationButton.builder()
+				.tooltip("Rocket.Chat Connector test notifications")
+				.icon(DebugNotificationPanel.createIcon())
+				.priority(10)
+				.panel(debugPanel)
+				.build();
+
+			clientToolbar.addNavigation(debugNavButton);
+		}
 	}
 
 	@Override
@@ -132,6 +167,12 @@ public class RocketChatConnectorPlugin extends Plugin
 		eventBus.unregister(chatPatternNotifier);
 		eventBus.unregister(grandExchangeNotifier);
 		eventBus.unregister(hardcoreStatusNotifier);
+
+		if (debugNavButton != null)
+		{
+			clientToolbar.removeNavigation(debugNavButton);
+			debugNavButton = null;
+		}
 	}
 
 	@Provides

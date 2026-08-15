@@ -1,6 +1,8 @@
 package space.covalent.rocketchat.notifiers;
 
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
+import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,6 +22,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class ChatMessageNotifiersTest
 {
+	@Mock Client client;
 	@Mock RocketChatConnectorConfig config;
 	@Mock WebhookClient webhookClient;
 
@@ -280,5 +283,127 @@ public class ChatMessageNotifiersTest
 		slayerNotifier.onChatMessage(gameMessage(
 			"You have completed your task! You killed 1,000 Abyssal demons."));
 		verify(webhookClient).send(any(), any());
+	}
+
+	// ── sendTestNotification() debug-panel hooks ─────────────────────────────
+
+	@Test
+	public void testPetSendTestNotificationFires()
+	{
+		when(config.notifyOnPet()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		petNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getTitle().contains("Zezima"));
+	}
+
+	@Test
+	public void testQuestSendTestNotificationFires()
+	{
+		when(config.notifyOnQuest()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		questNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Zezima"));
+	}
+
+	@Test
+	public void testSlayerSendTestNotificationFires()
+	{
+		when(config.notifyOnSlayer()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		slayerNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Zezima"));
+	}
+
+	@Test
+	public void testBossSendTestNotificationFires()
+	{
+		when(config.notifyOnBoss()).thenReturn(true);
+		when(config.bossPersonalBestOnly()).thenReturn(false);
+		when(config.bossKillCountInterval()).thenReturn(1);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		bossNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		RocketChatPayload.Attachment attachment = captor.getValue().getAttachments().get(0);
+		// Name lives in text now, not title - Rocket.Chat doesn't render emoji shortcodes in the
+		// attachment title field, so the (possible) helm-decorated name can't go there.
+		assertTrue(attachment.getText().contains("Zezima"));
+		assertTrue(attachment.getTitle().contains("Zulrah kill count: 42"));
+	}
+
+	@Test
+	public void testCollectionLogSendTestNotificationFires()
+	{
+		when(config.notifyOnCollectionLog()).thenReturn(true);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		collectionLogNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Zezima"));
+	}
+
+	@Test
+	public void testCombatAchievementSendTestNotificationFires()
+	{
+		when(config.notifyOnCombatAchievement()).thenReturn(true);
+		when(config.minCombatAchievementTier()).thenReturn(CombatAchievementTier.GRANDMASTER);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		combatAchievementNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Zezima"));
+	}
+
+	@Test
+	public void testDiarySendTestNotificationFires()
+	{
+		when(config.notifyOnDiary()).thenReturn(true);
+		when(config.minDiaryTier()).thenReturn(DiaryTier.ELITE);
+		when(config.webhookUrl()).thenReturn(WEBHOOK_URL);
+		Player player = mock(Player.class);
+		when(player.getName()).thenReturn("Zezima");
+		when(client.getLocalPlayer()).thenReturn(player);
+
+		diaryNotifier.sendTestNotification();
+
+		ArgumentCaptor<RocketChatPayload> captor = ArgumentCaptor.forClass(RocketChatPayload.class);
+		verify(webhookClient).send(any(), captor.capture());
+		assertTrue(captor.getValue().getAttachments().get(0).getText().contains("Zezima"));
 	}
 }

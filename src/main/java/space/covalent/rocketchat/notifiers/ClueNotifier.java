@@ -5,8 +5,10 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -18,18 +20,21 @@ import net.runelite.api.Client;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.ItemStack;
 import net.runelite.client.plugins.loottracker.LootReceived;
 import net.runelite.client.ui.DrawManager;
+import net.runelite.http.api.loottracker.LootRecordType;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import space.covalent.rocketchat.ClueTier;
-import space.covalent.rocketchat.IronManMode;
+import space.covalent.rocketchat.ItemEmoji;
 import space.covalent.rocketchat.ItemFilter;
 import space.covalent.rocketchat.OsrsWiki;
+import space.covalent.rocketchat.PlayerNameFormatter;
 import space.covalent.rocketchat.RarityLookupService;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatFileUploadClient;
@@ -158,13 +163,13 @@ public class ClueNotifier
 			return;
 		}
 
-		IronManMode ironManMode = config.ironManMode();
 		String whitelist = config.itemWhitelist();
 		String ignorelist = config.itemIgnorelist();
 
 		ItemStack bestStack = null;
 		ItemComposition bestComp = null;
-		long bestPrice = -1;
+		long bestGePrice = -1;
+		long bestHaPrice = -1;
 		boolean bestWhitelisted = false;
 
 		for (ItemStack stack : items)
@@ -177,9 +182,8 @@ public class ClueNotifier
 				continue;
 			}
 
-			long price = (ironManMode != null && ironManMode.isIronman())
-				? (long) comp.getHaPrice() * stack.getQuantity()
-				: (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
+			long gePrice = (long) itemManager.getItemPrice(stack.getId()) * stack.getQuantity();
+			long haPrice = (long) comp.getHaPrice() * stack.getQuantity();
 
 			boolean whitelisted = ItemFilter.matches(whitelist, itemName);
 
@@ -190,12 +194,13 @@ public class ClueNotifier
 			}
 			else
 			{
-				better = price > bestPrice;
+				better = gePrice > bestGePrice;
 			}
 
 			if (bestStack == null || better)
 			{
-				bestPrice = price;
+				bestGePrice = gePrice;
+				bestHaPrice = haPrice;
 				bestStack = stack;
 				bestComp = comp;
 				bestWhitelisted = whitelisted;
@@ -209,7 +214,7 @@ public class ClueNotifier
 
 		String tierName = tier.name().charAt(0) + tier.name().substring(1).toLowerCase();
 		String wikiSource = "Reward casket (" + tier.name().toLowerCase() + ")";
-		sendCard(tierName, wikiSource, bestStack, bestComp, bestPrice);
+		sendCard(tierName, wikiSource, bestStack, bestComp, bestGePrice, bestHaPrice);
 
 		if (config.clueScreenshotEnabled())
 		{
@@ -222,46 +227,63 @@ public class ClueNotifier
 		}
 	}
 
-	private void sendCard(String tierName, String wikiSource, ItemStack stack, ItemComposition comp, long price)
+	/**
+	 * Fires a synthetic clue reward through the real onLootReceived path, for the developer-mode
+	 * debug panel. Respects all normal config gates. Does not exercise the reward-screen
+	 * screenshot capture (onWidgetLoaded) - that needs a live clue reward screen widget and can't
+	 * be faked outside the game.
+	 */
+	public void sendTestNotification()
+	{
+		LootReceived event = new LootReceived("Clue Scroll (Master)", 0, LootRecordType.EVENT,
+			Collections.singletonList(new ItemStack(ItemID.ABYSSAL_WHIP, 1)), 1, null);
+		onLootReceived(event);
+	}
+
+	private void sendCard(String tierName, String wikiSource, ItemStack stack, ItemComposition comp, long gePrice, long haPrice)
 	{
 		String itemName = comp.getName();
-		String valueLine = price > 0 ? formatGp(price) + " gp" : null;
 
 		if (config.showDropRarity())
 		{
 			rarityLookupService.lookup(itemName, wikiSource,
-				rarity -> webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, itemName, valueLine, rarity)));
+				rarity -> webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, comp, gePrice, haPrice, rarity)));
 		}
 		else
 		{
-			webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, itemName, valueLine, null));
+			webhookClient.send(config.webhookUrl(), buildPayload(tierName, stack, comp, gePrice, haPrice, null));
 		}
 	}
 
-	private RocketChatPayload buildPayload(String tierName, ItemStack stack, String itemName, String valueLine, RarityLookupService.Rarity rarity)
+	private RocketChatPayload buildPayload(String tierName, ItemStack stack, ItemComposition comp, long gePrice, long haPrice, RarityLookupService.Rarity rarity)
 	{
-		StringBuilder text = new StringBuilder();
-		if (valueLine != null)
+		String itemName = comp.getName();
+		String playerName = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
+			? client.getLocalPlayer().getName()
+			: "Unknown";
+		String headerName = PlayerNameFormatter.format("**" + playerName + "**", config.ironManMode(), config.useEmojiIcons());
+
+		String itemLabel = stack.getQuantity() > 1 ? stack.getQuantity() + "x " + itemName : itemName;
+		if (config.useEmojiIcons() && OsrsWiki.isLinkable(itemName))
 		{
-			text.append(valueLine);
+			itemLabel = ":" + ItemEmoji.shortcode(itemName) + ": " + itemLabel;
 		}
-		if (rarity != null)
-		{
-			if (text.length() > 0)
-			{
-				text.append("\n");
-			}
-			text.append(formatRarityLine(rarity));
-		}
+		String itemText = OsrsWiki.isLinkable(itemName)
+			? "[" + itemLabel + "](" + OsrsWiki.pageUrl(itemName) + ")"
+			: itemLabel;
+
+		String text = headerName + "\nJust got **" + itemText + "** from *Clue Scroll (" + tierName + ")*";
 
 		RocketChatPayload.Attachment.AttachmentBuilder attachment = RocketChatPayload.Attachment.builder()
-			.title(stack.getQuantity() + "x " + itemName)
-			.text(text.toString())
-			.color("#8B4513");
+			.color("#8B4513")
+			.text(text)
+			.fields(buildFields(gePrice, haPrice, rarity));
 
-		if (OsrsWiki.isLinkable(itemName))
+		// image_url, not thumb_url - OSRS item icon PNGs aren't padded to a square, and thumb_url
+		// force-stretches non-square images. Skipped entirely in emoji-icon mode, where the icon
+		// already appears inline above via the emoji shortcode.
+		if (!config.useEmojiIcons() && OsrsWiki.isLinkable(itemName))
 		{
-			attachment.titleLink(OsrsWiki.pageUrl(itemName));
 			attachment.imageUrl(OsrsWiki.iconUrl(itemName));
 		}
 
@@ -269,6 +291,39 @@ public class ClueNotifier
 			.text("📜 " + tierName + " Clue Scroll completed")
 			.attachments(Collections.singletonList(attachment.build()))
 			.build();
+	}
+
+	private List<RocketChatPayload.Field> buildFields(long gePrice, long haPrice, RarityLookupService.Rarity rarity)
+	{
+		List<RocketChatPayload.Field> fields = new ArrayList<>();
+
+		if (rarity != null)
+		{
+			fields.add(RocketChatPayload.Field.builder()
+				.title("Rarity")
+				.value("`# " + formatRarityLine(rarity) + "`")
+				.short_(true)
+				.build());
+		}
+
+		// Some clue rewards (e.g. untradeable ones) have no GE or HA value at all - omit both
+		// fields rather than show two zero-value boxes.
+		if (gePrice > 0 || haPrice > 0)
+		{
+			fields.add(RocketChatPayload.Field.builder()
+				.title("HA Value")
+				.value("`" + formatGp(haPrice) + " gp`")
+				.short_(true)
+				.build());
+
+			fields.add(RocketChatPayload.Field.builder()
+				.title("GE Value")
+				.value("`" + formatGp(gePrice) + " gp`")
+				.short_(true)
+				.build());
+		}
+
+		return fields;
 	}
 
 	private static String formatGp(long value)

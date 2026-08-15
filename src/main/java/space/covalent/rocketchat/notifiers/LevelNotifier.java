@@ -9,6 +9,7 @@ import net.runelite.api.Client;
 import net.runelite.api.Skill;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.eventbus.Subscribe;
+import space.covalent.rocketchat.PlayerNameFormatter;
 import space.covalent.rocketchat.RocketChatConnectorConfig;
 import space.covalent.rocketchat.RocketChatPayload;
 import space.covalent.rocketchat.WebhookClient;
@@ -56,6 +57,7 @@ public class LevelNotifier
 		String playerName = client.getLocalPlayer() != null && client.getLocalPlayer().getName() != null
 			? client.getLocalPlayer().getName()
 			: "Unknown";
+		playerName = PlayerNameFormatter.format(playerName, config.ironManMode(), config.useEmojiIcons());
 
 		RocketChatPayload payload = RocketChatPayload.builder()
 			.attachments(Collections.singletonList(
@@ -69,5 +71,20 @@ public class LevelNotifier
 			.build();
 
 		webhookClient.send(config.webhookUrl(), payload);
+	}
+
+	/**
+	 * Fires a synthetic level-up through the real onStatChanged path, for the developer-mode
+	 * debug panel. onStatChanged only notifies when a level rises above the last-seen level for
+	 * that skill, and lastLevels is already seeded from real gameplay by the time this runs (the
+	 * client fires StatChanged for every skill on login) - so this reads the player's actual
+	 * current Attack level, seeds with that exact value first (guaranteed not to fire, since
+	 * equal doesn't count as a rise), then fires once with level+1.
+	 */
+	public void sendTestNotification()
+	{
+		int currentLevel = client.getRealSkillLevel(Skill.ATTACK);
+		onStatChanged(new StatChanged(Skill.ATTACK, 0, currentLevel, currentLevel));
+		onStatChanged(new StatChanged(Skill.ATTACK, 0, currentLevel + 1, currentLevel + 1));
 	}
 }

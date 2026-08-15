@@ -92,4 +92,21 @@ public class HardcoreStatusNotifierTest
 
         verify(webhookClient, never()).send(any(), any());
     }
+
+    @Test
+    public void testSendTestNotificationFiresRegardlessOfAccountType()
+    {
+        // sendTestNotification bypasses the hardcore-account gate entirely (there's no separate
+        // notifyOnX toggle here to fall back to), so this must still fire even set to NONE.
+        // lenient(): the stub is intentionally not required to be consumed - that's the point.
+        lenient().when(config.ironManMode()).thenReturn(IronManMode.NONE);
+        when(config.webhookUrl()).thenReturn("http://example.com/hooks/test");
+        Player player = mock(Player.class);
+        when(player.getName()).thenReturn("Zezima");
+        when(client.getLocalPlayer()).thenReturn(player);
+
+        notifier.sendTestNotification();
+
+        verify(webhookClient).send(any(), any());
+    }
 }

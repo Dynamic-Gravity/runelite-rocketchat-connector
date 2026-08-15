@@ -318,4 +318,24 @@ public interface RocketChatConnectorConfig extends Config
 		description = "Enables iron man behaviours appropriate for your account type",
 		section = ironManSection)
 	default IronManMode ironManMode() { return IronManMode.NONE; }
+
+	// Item icons
+	@ConfigSection(name = "Item Icons", description = "How item icons are shown in Loot/Clue notification cards", position = 16)
+	String itemIconSection = "itemicon";
+
+	@ConfigItem(
+		keyName = "useEmojiIcons",
+		name = "Use custom emoji icons",
+		description = "Only works if your Rocket.Chat server's admin has pre-uploaded item icons as custom emoji (see tools/item-emojis "
+			+ "in the plugin repo) - if they haven't, this will make cards show literal \":osrs_item_name:\" text instead of an icon. "
+			+ "OSRS Wiki item icons aren't padded to a square, so Rocket.Chat's normal image attachment either stretches or enlarges them. "
+			+ "When enabled, the item name is instead prefixed with a \":osrs_<item name>:\" emoji shortcode "
+			+ "(lowercased, spaces/punctuation collapsed to underscores, e.g. \"Black platelegs\" -> \":osrs_black_platelegs:\"), which "
+			+ "Rocket.Chat's emoji renderer fits into its box instead of stretching.",
+		section = itemIconSection
+	)
+	default boolean useEmojiIcons()
+	{
+		return false;
+	}
 }
