@@ -52,8 +52,17 @@ def slugify(item_name: str) -> str:
 
 
 # Items the plugin references by name that aren't GE-tradeable, so they never appear in
-# MAPPING_URL's result - the account-type helms and coins (currency itself isn't a GE item).
-# Keep in sync with IronManMode.java's helm names and ItemEmoji usages for "Coins".
+# MAPPING_URL's result - the account-type helms and coins (currency itself isn't a GE item),
+# plus boss/skilling pets (untradeable, so never in the GE mapping either, but exactly the kind
+# of exciting LootNotifier drop someone wants an icon for). Keep in sync with IronManMode.java's
+# helm names and ItemEmoji usages for "Coins".
+#
+# Pet list sourced from the wiki's Category:Pets, filtered to entries that are (a) real
+# obtainable items (not category/dialogue meta-pages), (b) actually fired via a loot drop (the
+# Gertrude's Cat quest-line cats are quest/growth rewards, never a LootReceived event, so they're
+# excluded), and (c) verified to have a working small icon file, not a large detail/splash image.
+# A handful of newer companion/pet items couldn't be verified this way and are left out rather
+# than guessed - see tools/item-emojis/README.md.
 EXTRA_ITEMS = [
 	{"name": "Coins", "icon": "Coins.png"},
 	{"name": "Ironman helm", "icon": "Ironman helm.png"},
@@ -61,6 +70,82 @@ EXTRA_ITEMS = [
 	{"name": "Hardcore ironman helm", "icon": "Hardcore ironman helm.png"},
 	{"name": "Group ironman helm", "icon": "Group ironman helm.png"},
 	{"name": "Hardcore group ironman helm", "icon": "Hardcore group ironman helm.png"},
+
+	{"name": "Abyssal orphan", "icon": "Abyssal orphan.png"},
+	{"name": "Abyssal protector", "icon": "Abyssal protector.png"},
+	{"name": "Aggy", "icon": "Aggy.png"},
+	{"name": "Baby chinchompa (black)", "icon": "Baby chinchompa (black).png"},
+	{"name": "Baby chinchompa (gold)", "icon": "Baby chinchompa (gold).png"},
+	{"name": "Baby chinchompa (grey)", "icon": "Baby chinchompa (grey).png"},
+	{"name": "Baby chinchompa (red)", "icon": "Baby chinchompa (red).png"},
+	{"name": "Baby Mole", "icon": "Baby Mole.png"},
+	{"name": "Baron", "icon": "Baron.png"},
+	{"name": "Beaver", "icon": "Beaver.png"},
+	{"name": "Beef", "icon": "Beef.png"},
+	{"name": "Bloodhound", "icon": "Bloodhound.png"},
+	{"name": "Bran", "icon": "Bran.png"},
+	{"name": "Broav", "icon": "Broav.png"},
+	{"name": "Butch", "icon": "Butch.png"},
+	{"name": "Callisto cub", "icon": "Callisto cub.png"},
+	{"name": "Chompy chick", "icon": "Chompy chick.png"},
+	{"name": "Dom", "icon": "Dom.png"},
+	{"name": "Fishbowl", "icon": "Fishbowl.png"},
+	{"name": "Fox", "icon": "Fox.png"},
+	{"name": "Gary", "icon": "Gary.png"},
+	{"name": "Gull", "icon": "Gull.png"},
+	{"name": "Herbi", "icon": "Herbi.png"},
+	{"name": "Heron", "icon": "Heron.png"},
+	{"name": "Huberte", "icon": "Huberte.png"},
+	{"name": "Humphrey Dumphrey", "icon": "Humphrey Dumphrey.png"},
+	{"name": "Jal-Nib-Rek", "icon": "Jal-Nib-Rek.png"},
+	{"name": "Kalphite Princess", "icon": "Kalphite Princess.png"},
+	{"name": "Lil' Zik", "icon": "Lil' Zik.png"},
+	{"name": "Lil'viathan", "icon": "Lil'viathan.png"},
+	{"name": "Little Nightmare", "icon": "Little Nightmare.png"},
+	{"name": "Maggot marquess", "icon": "Maggot marquess.png"},
+	{"name": "Mayor of catherby", "icon": "Mayor of catherby.png"},
+	{"name": "Moxi", "icon": "Moxi.png"},
+	{"name": "Nexling", "icon": "Nexling.png"},
+	{"name": "Nid", "icon": "Nid.png"},
+	{"name": "Noon", "icon": "Noon.png"},
+	{"name": "Olmlet", "icon": "Olmlet.png"},
+	{"name": "Pet Chaos Elemental", "icon": "Pet Chaos Elemental.png"},
+	{"name": "Pet Dagannoth Prime", "icon": "Pet Dagannoth Prime.png"},
+	{"name": "Pet Dagannoth Rex", "icon": "Pet Dagannoth Rex.png"},
+	{"name": "Pet Dagannoth Supreme", "icon": "Pet Dagannoth Supreme.png"},
+	{"name": "Pet General Graardor", "icon": "Pet General Graardor.png"},
+	{"name": "Pet K'ril Tsutsaroth", "icon": "Pet K'ril Tsutsaroth.png"},
+	{"name": "Pet Kraken", "icon": "Pet Kraken.png"},
+	{"name": "Pet Kree'arra", "icon": "Pet Kree'arra.png"},
+	{"name": "Pet Penance Queen", "icon": "Pet Penance Queen.png"},
+	{"name": "Pet Smoke Devil", "icon": "Pet Smoke Devil.png"},
+	{"name": "Pet Snakeling", "icon": "Pet Snakeling.png"},
+	{"name": "Pet Zilyana", "icon": "Pet Zilyana.png"},
+	{"name": "Pet dark core", "icon": "Pet dark core.png"},
+	{"name": "Pet rock", "icon": "Pet rock.png"},
+	{"name": "Phoenix", "icon": "Phoenix.png"},
+	{"name": "Prince Black Dragon", "icon": "Prince Black Dragon.png"},
+	{"name": "Quetzin", "icon": "Quetzin.png"},
+	{"name": "Rock golem", "icon": "Rock golem.png"},
+	{"name": "Rocky", "icon": "Rocky.png"},
+	{"name": "Scorpia's offspring", "icon": "Scorpia's offspring.png"},
+	{"name": "Scurry", "icon": "Scurry.png"},
+	{"name": "Skotos", "icon": "Skotos.png"},
+	{"name": "Smol Heredit", "icon": "Smol Heredit.png"},
+	{"name": "Smolcano", "icon": "Smolcano.png"},
+	{"name": "Soup", "icon": "Soup.png"},
+	{"name": "Sraracha", "icon": "Sraracha.png"},
+	{"name": "Tangleroot", "icon": "Tangleroot.png"},
+	{"name": "Tiny tempor", "icon": "Tiny tempor.png"},
+	{"name": "Toy cat", "icon": "Toy cat.png"},
+	{"name": "Tumeken's guardian", "icon": "Tumeken's guardian.png"},
+	{"name": "TzRek-Jad", "icon": "TzRek-Jad.png"},
+	{"name": "Venenatis spiderling", "icon": "Venenatis spiderling.png"},
+	{"name": "Vet'ion Jr.", "icon": "Vet'ion Jr..png"},
+	{"name": "Vorki", "icon": "Vorki.png"},
+	{"name": "Wisp", "icon": "Wisp.png"},
+	{"name": "Yami", "icon": "Yami.png"},
+	{"name": "Youngllef", "icon": "Youngllef.png"},
 ]
 
 

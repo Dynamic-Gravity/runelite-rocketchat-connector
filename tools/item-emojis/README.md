@@ -44,11 +44,18 @@ Produces `item-emoji-map.json`: `{"Black platelegs": "osrs_black_platelegs", ...
 ## Known limits
 
 - Source list is `prices.runescape.wiki`'s GE mapping (~4650 tradeable
-  items), plus `EXTRA_ITEMS` in the script - Coins and the five account-type
-  helms (Ironman/Ultimate/Hardcore/Group/Hardcore Group), none of which are
-  GE-tradeable so the mapping endpoint never returns them. Other untradeable
-  quest/event items still aren't covered - acceptable for loot/clue reward
-  cards, which are GE-tradeable items in practice.
+  items), plus `EXTRA_ITEMS` in the script for things that are never
+  GE-tradeable so the mapping endpoint never returns them: Coins, the five
+  account-type helms (Ironman/Ultimate/Hardcore/Group/Hardcore Group), and
+  ~75 boss/skilling pets (verified against `Category:Pets` on the wiki - a
+  pet drop is exactly the kind of loot a `LootNotifier` card should show a
+  real icon for, not broken `:osrs_x:` text). A few pets couldn't be
+  confidently verified (exact wiki filename unclear, or the only image
+  found was full detail art rather than a small icon) and were left out
+  rather than guessed - see the comment above `EXTRA_ITEMS` in the script
+  for which ones and why. Other untradeable quest/event items still aren't
+  covered - acceptable for loot/clue reward cards, which are GE-tradeable
+  items or pets in practice.
 - A handful of distinct item ids share an identical display name (e.g.
   multiple `Abyssal dagger(p)` entries), which collide on the same
   shortcode. The script claims the first and silently skips the rest for
